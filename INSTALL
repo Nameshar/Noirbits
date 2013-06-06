@@ -1,0 +1,9 @@
+Building Noirbits
+
+See doc/readme-qt.rst for instructions on building Noirbits-qt,
+the intended-for-end-users, nice-graphical-interface, reference
+implementation of Noirbits.
+
+See doc/build-*.txt for instructions on building Noirbits,
+the intended-for-services, no-graphical-interface, reference
+implementation of Noirbits.
