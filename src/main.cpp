@@ -867,13 +867,13 @@ unsigned int ComputeMinWork(unsigned int nBase, int64 nTime)
     return bnResult.GetCompact();
 }
 
-bool ShouldApplyNewRetargetRules(const CBlockIndex* pindexLast)
+bool static ShouldApplyNewRetargetRules(const CBlockIndex* pindexLast)
 {
-	unsigned int nMinHeightForNewRules = 25000;
+	int nMinHeightForNewRules = 25000;
 	return pindexLast->nHeight + 1 > nMinHeightForNewRules;
 }
 
-bool ShouldApplyRetarget(const CBlockIndex* pindexLast, const CBlock *pblock)
+bool static ShouldApplyRetarget(const CBlockIndex* pindexLast, const CBlock *pblock)
 {
 	unsigned int nMaxTimeInterval = 14400;
 	bool bShouldRetarget = false;
@@ -890,6 +890,26 @@ bool ShouldApplyRetarget(const CBlockIndex* pindexLast, const CBlock *pblock)
 	return bShouldRetarget;
 }
 
+unsigned int static GetTestNetNextTarget(const CBlockIndex* pindexLast, const CBlock *pblock, unsigned int nProofOfWorkLimit)
+{
+	// If the new block's timestamp is more than 2* 10 minutes
+	// then allow mining of a min-difficulty block.
+	if (pblock->nTime > pindexLast->nTime + nTargetSpacing*2)
+	{
+		return nProofOfWorkLimit;
+	}
+	else
+	{
+		// Return the last non-special-min-difficulty-rules-block
+		const CBlockIndex* pindex = pindexLast;
+		while (pindex->pprev && pindex->nHeight % nInterval != 0 && pindex->nBits == nProofOfWorkLimit)
+		{
+			pindex = pindex->pprev;
+		}
+		return pindex->nBits;
+	}
+}
+
 unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlock *pblock)
 {
     unsigned int nProofOfWorkLimit = bnProofOfWorkLimit.GetCompact();
@@ -899,23 +919,12 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
         return nProofOfWorkLimit;
 		
     // Check if we should retarget diff.
-    if (!ShouldApplyRetarget(pindexLast))
+    if (!ShouldApplyRetarget(pindexLast, pblock))
     {
         // Special difficulty rule for testnet:
         if (fTestNet)
         {
-            // If the new block's timestamp is more than 2* 10 minutes
-            // then allow mining of a min-difficulty block.
-            if (pblock->nTime > pindexLast->nTime + nTargetSpacing*2)
-                return nProofOfWorkLimit;
-            else
-            {
-                // Return the last non-special-min-difficulty-rules-block
-                const CBlockIndex* pindex = pindexLast;
-                while (pindex->pprev && pindex->nHeight % nInterval != 0 && pindex->nBits == nProofOfWorkLimit)
-                    pindex = pindex->pprev;
-                return pindex->nBits;
-            }
+            return GetTestNetNextTarget(pindexLast, pblock, nProofOfWorkLimit);
         }
 
         return pindexLast->nBits;
