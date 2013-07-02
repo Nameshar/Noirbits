@@ -867,6 +867,29 @@ unsigned int ComputeMinWork(unsigned int nBase, int64 nTime)
     return bnResult.GetCompact();
 }
 
+bool ShouldApplyNewRetargetRules(const CBlockIndex* pindexLast)
+{
+	unsigned int nMinHeightForNewRules = 25000;
+	return pindexLast->nHeight + 1 > nMinHeightForNewRules;
+}
+
+bool ShouldApplyRetarget(const CBlockIndex* pindexLast, const CBlock *pblock)
+{
+	unsigned int nMaxTimeInterval = 14400;
+	bool bShouldRetarget = false;
+	
+	if (ShouldApplyNewRetargetRules(pindexLast))
+	{
+		// We have exceeded max. time for current difficulty, change 
+		bShouldRetarget |= (pindexLast->nTime + nMaxTimeInterval) < pblock->nTime;
+	}
+	
+	// We have reached retarget height
+	bShouldRetarget |= (pindexLast->nHeight + 1) % nInterval == 0;
+	
+	return bShouldRetarget;
+}
+
 unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlock *pblock)
 {
     unsigned int nProofOfWorkLimit = bnProofOfWorkLimit.GetCompact();
@@ -875,12 +898,8 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
     if (pindexLast == NULL)
         return nProofOfWorkLimit;
 		
-	bool bNoRecentRetarget = pindexLast->nTime + nMaxTimeInterval < GetAdjustedTime();
-	if (bNoRecentRetarget)
-		printf("No retarget in last 4 hours, adjusting difficulty.");
-		
-    // Only change once per interval
-    if ((pindexLast->nHeight+1) % nInterval != 0 && !bNoRecentRetarget)
+    // Check if we should retarget diff.
+    if (!ShouldApplyRetarget(pindexLast))
     {
         // Special difficulty rule for testnet:
         if (fTestNet)
