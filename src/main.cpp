@@ -877,7 +877,7 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
         return nProofOfWorkLimit;
 
     // Only change once per interval or at least once every 4 hours
-    bool bNoRecentRetarget = pindexLast->nTime + nMaxTimeInterval > GetAdjustedTime();
+    bool bNoRecentRetarget = pindexLast->nTime + nMaxTimeInterval < GetAdjustedTime();
     if (bNoRecentRetarget)
     	printf("No retarget in last 4 hours, adjusting difficulty.");
 
