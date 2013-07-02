@@ -910,6 +910,26 @@ unsigned int static GetTestNetNextTarget(const CBlockIndex* pindexLast, const CB
 	}
 }
 
+int static GetBlocksToGoBack(const CBlockIndex* pindexLast)
+{
+	// Fixes an issue where a 51% attack can change difficulty at will.
+    // Go back the full period unless it's the first retarget after genesis. Code courtesy of Art Forz
+	int nBlocksToGoBack = nInterval - 1;
+	// WTF ? 
+    if ((pindexLast->nHeight + 1) != nInterval)
+	{
+		// WTF ? 
+        nBlocksToGoBack = nInterval;
+	}
+	// @todo: check value of COINFIX1_BLOCK
+    if (pindexLast->nHeight > COINFIX1_BLOCK) 
+	{
+        nBlocksToGoBack = nReTargetHistoryFact * nInterval;
+    }
+	
+	return nBlocksToGoBack,
+}
+
 unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlock *pblock)
 {
     unsigned int nProofOfWorkLimit = bnProofOfWorkLimit.GetCompact();
@@ -929,34 +949,31 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
 
         return pindexLast->nBits;
     }
-
-    // Litecoin: This fixes an issue where a 51% attack can change difficulty at will.
-    // Go back the full period unless it's the first retarget after genesis. Code courtesy of Art Forz
-    int blockstogoback = nInterval-1;
-    if ((pindexLast->nHeight+1) != nInterval)
-        blockstogoback = nInterval;
-    if (pindexLast->nHeight > COINFIX1_BLOCK) {
-        blockstogoback = nReTargetHistoryFact * nInterval;
-    }
-
+	
     // Go back by what we want to be nReTargetHistoryFact*nInterval blocks
     const CBlockIndex* pindexFirst = pindexLast;
-    for (int i = 0; pindexFirst && i < blockstogoback; i++)
+    for (int i = 0; pindexFirst && i < GetBlocksToGoBack(pindexLast); i++)
+	{
         pindexFirst = pindexFirst->pprev;
+	}
     assert(pindexFirst);
 
     // Limit adjustment step
     int64 nActualTimespan = 0;
     if (pindexLast->nHeight > COINFIX1_BLOCK)
+	{
         // obtain average actual timespan
         nActualTimespan = (pindexLast->GetBlockTime() - pindexFirst->GetBlockTime())/nReTargetHistoryFact;
+	}
     else
+	{
         nActualTimespan = pindexLast->GetBlockTime() - pindexFirst->GetBlockTime();
+	}
+		
     printf("  nActualTimespan = %"PRI64d"  before bounds\n", nActualTimespan);
-    if (nActualTimespan < nTargetTimespan/4)
-        nActualTimespan = nTargetTimespan/4;
-    if (nActualTimespan > nTargetTimespan*4)
-        nActualTimespan = nTargetTimespan*4;
+	
+    if (nActualTimespan < nTargetTimespan/4) nActualTimespan = nTargetTimespan/4;
+    if (nActualTimespan > nTargetTimespan*4) nActualTimespan = nTargetTimespan*4;
 
     // Retarget
     CBigNum bnNew;
