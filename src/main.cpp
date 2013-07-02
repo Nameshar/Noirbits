@@ -870,13 +870,18 @@ unsigned int ComputeMinWork(unsigned int nBase, int64 nTime)
 unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlock *pblock)
 {
     unsigned int nProofOfWorkLimit = bnProofOfWorkLimit.GetCompact();
+    unsigned int nMaxTimeInterval = 14400;
 
     // Genesis block
     if (pindexLast == NULL)
         return nProofOfWorkLimit;
 
-    // Only change once per interval
-    if ((pindexLast->nHeight+1) % nInterval != 0)
+    // Only change once per interval or at least once every 4 hours
+    bool bNoRecentRetarget = pindexLast->nTime + nMaxTimeInterval > GetAdjustedTime();
+    if (bNoRecentRetarget)
+    	printf("No retarget in last 4 hours, adjusting difficulty.");
+
+    if ((pindexLast->nHeight+1) % nInterval != 0 && !bNoRecentRetarget)
     {
         // Special difficulty rule for testnet:
         if (fTestNet)
