@@ -874,9 +874,13 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
     // Genesis block
     if (pindexLast == NULL)
         return nProofOfWorkLimit;
-
+		
+	bool bNoRecentRetarget = pindexLast->nTime + nMaxTimeInterval < GetAdjustedTime();
+	if (bNoRecentRetarget)
+		printf("No retarget in last 4 hours, adjusting difficulty.");
+		
     // Only change once per interval
-    if ((pindexLast->nHeight+1) % nInterval != 0)
+    if ((pindexLast->nHeight+1) % nInterval != 0 && !bNoRecentRetarget)
     {
         // Special difficulty rule for testnet:
         if (fTestNet)

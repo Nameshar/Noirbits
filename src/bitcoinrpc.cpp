@@ -319,8 +319,9 @@ Value GetNetworkHashPS(int lookup) {
         return 0;
 
     // If lookup is -1, then use blocks since last difficulty change.
+	// @todo: Get magic number out of here
     if (lookup <= 0)
-        lookup = pindexBest->nHeight % 2016 + 1;
+        lookup = pindexBest->nHeight % 60 + 1;
 
     // If lookup is larger than chain, then set it to chain length.
     if (lookup > pindexBest->nHeight)
