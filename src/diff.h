@@ -13,9 +13,10 @@
 class CDiff
 {
 protected:
-	static const int64 nTargetTimespan = 1 * 2 * 60 * 60; // Noirbits: 2 hour
-	static const int64 nTargetSpacing = 120; // Noirbits: 2 minute blocks
-	static const int64 nInterval = nTargetTimespan / nTargetSpacing;
+	static const int 	nMinHeightForNewRules = 25000;
+	static const int64 	nTargetTimespan = 1 * 2 * 60 * 60; // Noirbits: 2 hour
+	static const int64 	nTargetSpacing = 120; // Noirbits: 2 minute blocks
+	static const int64 	nInterval = nTargetTimespan / nTargetSpacing;
 	// Thanks: Balthazar for suggesting the following fix
 	// https://bitcointalk.org/index.php?topic=182430.msg1904506#msg1904506
 	static const int64 nReTargetHistoryFact = 4;

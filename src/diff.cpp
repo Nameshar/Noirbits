@@ -9,8 +9,7 @@
 
 bool CMainNetDiff::ShouldApplyNewRetargetRules(const CBlockIndex* pindexLast)
 {
-	int nMinHeightForNewRules = 25000;
-	return pindexLast->nHeight + 1 > nMinHeightForNewRules;
+	return pindexLast->nHeight + 1 >= nMinHeightForNewRules;
 }
 
 bool CMainNetDiff::ShouldApplyRetarget(const CBlockIndex* pindexLast, const CBlock *pblock)
@@ -19,7 +18,7 @@ bool CMainNetDiff::ShouldApplyRetarget(const CBlockIndex* pindexLast, const CBlo
 
 	if (ShouldApplyNewRetargetRules(pindexLast))
 	{
-		// We have exceeded max. time for current difficulty, change
+		// We have exceeded max. time for current difficulty, change (hard limit)
 		bShouldRetarget |= (pindexLast->nTime + nMaxTimeInterval) < pblock->nTime;
 	}
 
@@ -32,6 +31,9 @@ bool CMainNetDiff::ShouldApplyRetarget(const CBlockIndex* pindexLast, const CBlo
 int64 CMainNetDiff::GetActualTimespan(const CBlockIndex* pindexFirst, const CBlockIndex* pindexLast)
 {
 	int64 nActualTimespan = 0;
+	int64 nActualTimespanMax = 0;
+	int64 nActualTimespanMin = 0;
+
 	bool useNewRules = ShouldApplyNewRetargetRules(pindexLast);
 
 	if (pindexLast->nHeight > COINFIX1_BLOCK && !useNewRules)
@@ -44,11 +46,24 @@ int64 CMainNetDiff::GetActualTimespan(const CBlockIndex* pindexFirst, const CBlo
 		nActualTimespan = pindexLast->GetBlockTime() - pindexFirst->GetBlockTime();
 	}
 
+	if (useNewRules)
+	{
+		// FeatherCoin's cap system.
+		// For diff. increase
+		nActualTimespanMin = (nActualTimespan * 55) / 99;
+		// For diff. decrease
+		nActualTimespanMax = (nActualTimespan * 99) / 55;
+	}
+	else
+	{
+		nActualTimespanMin = nTargetTimespan / 4;
+		nActualTimespanMax = nTargetTimespan * 4;
+	}
 
 	printf("  nActualTimespan = %"PRI64d"  before bounds\n", nActualTimespan);
 
-	if (nActualTimespan < nTargetTimespan / 4) nActualTimespan = nTargetTimespan / 4;
-	if (nActualTimespan > nTargetTimespan * 4) nActualTimespan = nTargetTimespan * 4;
+	if (nActualTimespan > nActualTimespanMax) nActualTimespan = nActualTimespanMax;
+	if (nActualTimespan < nActualTimespanMin) nActualTimespan = nActualTimespanMin;
 
 	return nActualTimespan;
 }
@@ -92,11 +107,16 @@ unsigned int CMainNetDiff::ComputeMinWork(unsigned int nBase, int64 nTime)
 {
 	CBigNum bnResult;
 	bnResult.SetCompact(nBase);
+
+	bool useNewRules = nBestHeight >= nMinHeightForNewRules;
+
 	while (nTime > 0 && bnResult < bnProofOfWorkLimit)
 	{
-		// Maximum 400% adjustment...
-		bnResult *= 4;
-		// ... in best-case exactly 4-times-normal target time
+		if (useNewRules)
+			bnResult = bnResult * 99 / 55;
+		else
+			bnResult = bnResult / 4;
+
 		nTime -= nTargetTimespan * 4;
 	}
 
