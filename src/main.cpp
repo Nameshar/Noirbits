@@ -5,6 +5,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "checkpoints.h"
+#include "diff.h"
 #include "db.h"
 #include "net.h"
 #include "init.h"
@@ -833,164 +834,38 @@ int64 static GetBlockValue(int nHeight, int64 nFees)
     return nSubsidy + nFees;
 }
 
-static const int64 nTargetTimespan = 1 * 2 * 60 * 60; // Noirbits: 2 hour
-static const int64 nTargetSpacing = 120; // Noirbits: 2 minute blocks
-static const int64 nInterval = nTargetTimespan / nTargetSpacing;
-
-// Thanks: Balthazar for suggesting the following fix
-// https://bitcointalk.org/index.php?topic=182430.msg1904506#msg1904506
-static const int64 nReTargetHistoryFact = 4; // look at 4 times the retarget
-                                             // interval into the block history
-
 //
 // minimum amount of work that could possibly be required nTime after
 // minimum work required was nBase
 //
 unsigned int ComputeMinWork(unsigned int nBase, int64 nTime)
 {
-    // Testnet has min-difficulty blocks
-    // after nTargetSpacing*2 time between blocks:
-    if (fTestNet && nTime > nTargetSpacing*2)
-        return bnProofOfWorkLimit.GetCompact();
-
-    CBigNum bnResult;
-    bnResult.SetCompact(nBase);
-    while (nTime > 0 && bnResult < bnProofOfWorkLimit)
-    {
-        // Maximum 400% adjustment...
-        bnResult *= 4;
-        // ... in best-case exactly 4-times-normal target time
-        nTime -= nTargetTimespan*4;
-    }
-    if (bnResult > bnProofOfWorkLimit)
-        bnResult = bnProofOfWorkLimit;
-    return bnResult.GetCompact();
-}
-
-bool static ShouldApplyNewRetargetRules(const CBlockIndex* pindexLast)
-{
-	int nMinHeightForNewRules = 25000;
-	return pindexLast->nHeight + 1 > nMinHeightForNewRules;
-}
-
-bool static ShouldApplyRetarget(const CBlockIndex* pindexLast, const CBlock *pblock)
-{
-	unsigned int nMaxTimeInterval = 14400;
-	bool bShouldRetarget = false;
-	
-	if (ShouldApplyNewRetargetRules(pindexLast))
+	CDiff* diff;
+	if (fTestNet)
 	{
-		// We have exceeded max. time for current difficulty, change 
-		bShouldRetarget |= (pindexLast->nTime + nMaxTimeInterval) < pblock->nTime;
-	}
-	
-	// We have reached retarget height
-	bShouldRetarget |= (pindexLast->nHeight + 1) % nInterval == 0;
-	
-	return bShouldRetarget;
-}
-
-unsigned int static GetTestNetNextTarget(const CBlockIndex* pindexLast, const CBlock *pblock, unsigned int nProofOfWorkLimit)
-{
-	// If the new block's timestamp is more than 2* 10 minutes
-	// then allow mining of a min-difficulty block.
-	if (pblock->nTime > pindexLast->nTime + nTargetSpacing*2)
-	{
-		return nProofOfWorkLimit;
+		diff = new CTestNetDiff(bnProofOfWorkLimit);
 	}
 	else
 	{
-		// Return the last non-special-min-difficulty-rules-block
-		const CBlockIndex* pindex = pindexLast;
-		while (pindex->pprev && pindex->nHeight % nInterval != 0 && pindex->nBits == nProofOfWorkLimit)
-		{
-			pindex = pindex->pprev;
-		}
-		return pindex->nBits;
+		diff = new CMainNetDiff(bnProofOfWorkLimit);
 	}
-}
 
-int static GetBlocksToGoBack(const CBlockIndex* pindexLast)
-{
-	// Fixes an issue where a 51% attack can change difficulty at will.
-    // Go back the full period unless it's the first retarget after genesis. Code courtesy of Art Forz
-	int nBlocksToGoBack = nInterval - 1;
-	// WTF ? 
-    if ((pindexLast->nHeight + 1) != nInterval)
-	{
-		// WTF ? 
-        nBlocksToGoBack = nInterval;
-	}
-	// @todo: check value of COINFIX1_BLOCK
-    if (pindexLast->nHeight > COINFIX1_BLOCK) 
-	{
-        nBlocksToGoBack = nReTargetHistoryFact * nInterval;
-    }
-	
-	return nBlocksToGoBack,
+    return diff->ComputeMinWork(nBase, nTime);
 }
 
 unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlock *pblock)
 {
-    unsigned int nProofOfWorkLimit = bnProofOfWorkLimit.GetCompact();
-
-    // Genesis block
-    if (pindexLast == NULL)
-        return nProofOfWorkLimit;
-		
-    // Check if we should retarget diff.
-    if (!ShouldApplyRetarget(pindexLast, pblock))
-    {
-        // Special difficulty rule for testnet:
-        if (fTestNet)
-        {
-            return GetTestNetNextTarget(pindexLast, pblock, nProofOfWorkLimit);
-        }
-
-        return pindexLast->nBits;
-    }
-	
-    // Go back by what we want to be nReTargetHistoryFact*nInterval blocks
-    const CBlockIndex* pindexFirst = pindexLast;
-    for (int i = 0; pindexFirst && i < GetBlocksToGoBack(pindexLast); i++)
+	CDiff* diff;
+	if (fTestNet)
 	{
-        pindexFirst = pindexFirst->pprev;
+		diff = new CTestNetDiff(bnProofOfWorkLimit);
 	}
-    assert(pindexFirst);
-
-    // Limit adjustment step
-    int64 nActualTimespan = 0;
-    if (pindexLast->nHeight > COINFIX1_BLOCK)
+	else
 	{
-        // obtain average actual timespan
-        nActualTimespan = (pindexLast->GetBlockTime() - pindexFirst->GetBlockTime())/nReTargetHistoryFact;
+		diff = new CMainNetDiff(bnProofOfWorkLimit);
 	}
-    else
-	{
-        nActualTimespan = pindexLast->GetBlockTime() - pindexFirst->GetBlockTime();
-	}
-		
-    printf("  nActualTimespan = %"PRI64d"  before bounds\n", nActualTimespan);
-	
-    if (nActualTimespan < nTargetTimespan/4) nActualTimespan = nTargetTimespan/4;
-    if (nActualTimespan > nTargetTimespan*4) nActualTimespan = nTargetTimespan*4;
 
-    // Retarget
-    CBigNum bnNew;
-    bnNew.SetCompact(pindexLast->nBits);
-    bnNew *= nActualTimespan;
-    bnNew /= nTargetTimespan;
-
-    if (bnNew > bnProofOfWorkLimit)
-        bnNew = bnProofOfWorkLimit;
-
-    /// debug print
-    printf("GetNextWorkRequired RETARGET\n");
-    printf("nTargetTimespan = %"PRI64d"    nActualTimespan = %"PRI64d"\n", nTargetTimespan, nActualTimespan);
-    printf("Before: %08x  %s\n", pindexLast->nBits, CBigNum().SetCompact(pindexLast->nBits).getuint256().ToString().c_str());
-    printf("After:  %08x  %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
-
-    return bnNew.GetCompact();
+	return diff->GetNextWorkRequired(pindexLast, pblock);
 }
 
 bool CheckProofOfWork(uint256 hash, unsigned int nBits)
