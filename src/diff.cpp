@@ -32,16 +32,18 @@ bool CMainNetDiff::ShouldApplyRetarget(const CBlockIndex* pindexLast, const CBlo
 int64 CMainNetDiff::GetActualTimespan(const CBlockIndex* pindexFirst, const CBlockIndex* pindexLast)
 {
 	int64 nActualTimespan = 0;
+	bool useNewRules = ShouldApplyNewRetargetRules(pindexLast);
 
-	if (pindexLast->nHeight > COINFIX1_BLOCK)
+	if (pindexLast->nHeight > COINFIX1_BLOCK && !useNewRules)
 	{
 		// obtain average actual timespan
-		nActualTimespan = (pindexLast->GetBlockTime() - pindexFirst->GetBlockTime())/nReTargetHistoryFact;
+		nActualTimespan = (pindexLast->GetBlockTime() - pindexFirst->GetBlockTime()) / nReTargetHistoryFact;
 	}
 	else
 	{
 		nActualTimespan = pindexLast->GetBlockTime() - pindexFirst->GetBlockTime();
 	}
+
 
 	printf("  nActualTimespan = %"PRI64d"  before bounds\n", nActualTimespan);
 
@@ -67,17 +69,17 @@ const CBlockIndex* CMainNetDiff::GetFirstBlock(const CBlockIndex* pindexLast)
 int CMainNetDiff::GetBlocksToGoBack(const CBlockIndex* pindexLast)
 {
 	// Fixes an issue where a 51% attack can change difficulty at will.
-    // Go back the full period unless it's the first retarget after genesis. Code courtesy of Art Forz
+	// Go back the full period unless it's the first retarget after genesis. Code courtesy of Art Forz
 	int nBlocksToGoBack = nInterval - 1;
-    if ((pindexLast->nHeight + 1) != nInterval)
+	if ((pindexLast->nHeight + 1) != nInterval)
 	{
-        nBlocksToGoBack = nInterval;
+		nBlocksToGoBack = nInterval;
 	}
 
-    if (pindexLast->nHeight > COINFIX1_BLOCK)
+	if (pindexLast->nHeight > COINFIX1_BLOCK)
 	{
-        nBlocksToGoBack = nReTargetHistoryFact * nInterval;
-    }
+		nBlocksToGoBack = nReTargetHistoryFact * nInterval;
+	}
 
 	return nBlocksToGoBack;
 }
@@ -88,53 +90,54 @@ int CMainNetDiff::GetBlocksToGoBack(const CBlockIndex* pindexLast)
 //
 unsigned int CMainNetDiff::ComputeMinWork(unsigned int nBase, int64 nTime)
 {
-    CBigNum bnResult;
-    bnResult.SetCompact(nBase);
-    while (nTime > 0 && bnResult < bnProofOfWorkLimit)
-    {
-        // Maximum 400% adjustment...
-        bnResult *= 4;
-        // ... in best-case exactly 4-times-normal target time
-        nTime -= nTargetTimespan*4;
-    }
+	CBigNum bnResult;
+	bnResult.SetCompact(nBase);
+	while (nTime > 0 && bnResult < bnProofOfWorkLimit)
+	{
+		// Maximum 400% adjustment...
+		bnResult *= 4;
+		// ... in best-case exactly 4-times-normal target time
+		nTime -= nTargetTimespan * 4;
+	}
 
-    if (bnResult > bnProofOfWorkLimit)
-        bnResult = bnProofOfWorkLimit;
+	if (bnResult > bnProofOfWorkLimit)
+		bnResult = bnProofOfWorkLimit;
 
-    return bnResult.GetCompact();
+	return bnResult.GetCompact();
 }
 
 unsigned int CMainNetDiff::GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlock* pblock)
 {
-	    // Genesis block
-	    if (pindexLast == NULL)
-	        return nProofOfWorkLimit;
+	// Genesis block
+	if (pindexLast == NULL)
+		return nProofOfWorkLimit;
 
-	    // Check if we should retarget diff.
-	    if (!ShouldApplyRetarget(pindexLast, pblock))
-	    {
-	        return pindexLast->nBits;
-	    }
+	// Check if we should retarget diff.
+	if (!ShouldApplyRetarget(pindexLast, pblock))
+	{
+		return pindexLast->nBits;
+	}
 
-	    // Limit adjustment step
-	    int64 nActualTimespan = GetActualTimespan(GetFirstBlock(pindexLast), pindexLast);
+	// Limit adjustment step
+	int64 nActualTimespan = GetActualTimespan(GetFirstBlock(pindexLast), pindexLast);
 
-	    // Retarget
-	    CBigNum bnNew;
-	    bnNew.SetCompact(pindexLast->nBits);
-	    bnNew *= nActualTimespan;
-	    bnNew /= nTargetTimespan;
+	// Retarget
+	CBigNum bnNew, bnOld;
+	bnOld.SetCompact(pindexLast->nBits);
+	bnNew.SetCompact(pindexLast->nBits);
+	bnNew *= nActualTimespan;
+	bnNew /= nTargetTimespan;
 
-	    if (bnNew > bnProofOfWorkLimit)
-	        bnNew = bnProofOfWorkLimit;
+	if (bnNew > bnProofOfWorkLimit)
+		bnNew = bnProofOfWorkLimit;
 
-	    /// debug print
-	    printf("GetNextWorkRequired RETARGET\n");
-	    printf("nTargetTimespan = %"PRI64d"    nActualTimespan = %"PRI64d"\n", nTargetTimespan, nActualTimespan);
-	    printf("Before: %08x  %s\n", pindexLast->nBits, CBigNum().SetCompact(pindexLast->nBits).getuint256().ToString().c_str());
-	    printf("After:  %08x  %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
+	/// debug print
+	printf("GetNextWorkRequired RETARGET\n");
+	printf("nTargetTimespan = %"PRI64d"    nActualTimespan = %"PRI64d"\n", nTargetTimespan, nActualTimespan);
+	printf("Before: %08x  %s\n", pindexLast->nBits, CBigNum().SetCompact(pindexLast->nBits).getuint256().ToString().c_str());
+	printf("After:  %08x  %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
 
-	    return bnNew.GetCompact();
+	return bnNew.GetCompact();
 }
 
 //
@@ -143,12 +146,12 @@ unsigned int CMainNetDiff::GetNextWorkRequired(const CBlockIndex* pindexLast, co
 //
 unsigned int CTestNetDiff::ComputeMinWork(unsigned int nBase, int64 nTime)
 {
-    // Testnet has min-difficulty blocks
-    // after nTargetSpacing*2 time between blocks:
-    if (nTime > nTargetSpacing*2)
-        return bnProofOfWorkLimit.GetCompact();
+	// Testnet has min-difficulty blocks
+	// after nTargetSpacing*2 time between blocks:
+	if (nTime > nTargetSpacing*2)
+		return bnProofOfWorkLimit.GetCompact();
 
-    return CMainNetDiff::ComputeMinWork(nBase, nTime);
+	return CMainNetDiff::ComputeMinWork(nBase, nTime);
 }
 
 unsigned int CTestNetDiff::GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlock* pblock)

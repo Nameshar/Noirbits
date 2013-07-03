@@ -824,6 +824,7 @@ uint256 static GetOrphanRoot(const CBlock* pblock)
     // Work back to the first block in the orphan chain
     while (mapOrphanBlocks.count(pblock->hashPrevBlock))
         pblock = mapOrphanBlocks[pblock->hashPrevBlock];
+
     return pblock->GetHash();
 }
 
@@ -834,38 +835,20 @@ int64 static GetBlockValue(int nHeight, int64 nFees)
     return nSubsidy + nFees;
 }
 
+CDiff* pdiff = (fTestNet) ?  new CTestNetDiff(bnProofOfWorkLimit) : new CMainNetDiff(bnProofOfWorkLimit);
+
 //
 // minimum amount of work that could possibly be required nTime after
 // minimum work required was nBase
 //
 unsigned int ComputeMinWork(unsigned int nBase, int64 nTime)
 {
-	CDiff* diff;
-	if (fTestNet)
-	{
-		diff = new CTestNetDiff(bnProofOfWorkLimit);
-	}
-	else
-	{
-		diff = new CMainNetDiff(bnProofOfWorkLimit);
-	}
-
-    return diff->ComputeMinWork(nBase, nTime);
+    return pdiff->ComputeMinWork(nBase, nTime);
 }
 
 unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlock *pblock)
 {
-	CDiff* diff;
-	if (fTestNet)
-	{
-		diff = new CTestNetDiff(bnProofOfWorkLimit);
-	}
-	else
-	{
-		diff = new CMainNetDiff(bnProofOfWorkLimit);
-	}
-
-	return diff->GetNextWorkRequired(pindexLast, pblock);
+	return pdiff->GetNextWorkRequired(pindexLast, pblock);
 }
 
 bool CheckProofOfWork(uint256 hash, unsigned int nBits)
