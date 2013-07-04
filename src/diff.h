@@ -74,7 +74,7 @@ public:
 	virtual unsigned int 	ComputeMinWork(unsigned int nBase, int64 nTime);
 	virtual unsigned int 	GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlock* pblock);
 
-	static bool ShouldApplyNewRetargetRules(int nHeight)
+	inline static bool ShouldApplyNewRetargetRules(int nHeight)
 	{
 		return nHeight + 1 >= nMinHeightForNewRules;
 	}
