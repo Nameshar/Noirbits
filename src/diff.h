@@ -51,7 +51,7 @@ private:
 	// https://bitcointalk.org/index.php?topic=182430.msg1904506#msg1904506
 	static const int 			nRetargetHistoryFact = 4;
 	// Height at which to apply new rules.
-	static const int 			nMinHeightForNewRules = 25000;
+	static const int 			nMinHeightForNewRules = 20000;
 	// Max. span between two retargets.
 	static const unsigned int 	nMaxTimeInterval = 14400;
 
