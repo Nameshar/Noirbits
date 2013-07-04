@@ -10,17 +10,23 @@
 
 #include "main.h"
 
+struct SRetargetParams
+{
+	int64 nTargetTimespan;
+	int64 nTargetSpacing;
+	int64 nInterval;
+
+	SRetargetParams(int64 nTargetTimespan, int64 nTargetSpacing)
+	{
+		this->nTargetTimespan = nTargetTimespan;
+		this->nTargetSpacing = nTargetSpacing;
+		this->nInterval = nTargetTimespan / nTargetSpacing;
+	}
+};
+
 class CDiff
 {
 protected:
-	static const int 	nMinHeightForNewRules = 25000;
-	static const int64 	nTargetTimespan = 1 * 2 * 60 * 60; // Noirbits: 2 hour
-	static const int64 	nTargetSpacing = 120; // Noirbits: 2 minute blocks
-	static const int64 	nInterval = nTargetTimespan / nTargetSpacing;
-	// Thanks: Balthazar for suggesting the following fix
-	// https://bitcointalk.org/index.php?topic=182430.msg1904506#msg1904506
-	static const int64 nReTargetHistoryFact = 4;
-
 	// Fields
 	CBigNum 		bnProofOfWorkLimit;
 	unsigned int	nProofOfWorkLimit;
@@ -41,10 +47,11 @@ public:
 class CMainNetDiff : public CDiff
 {
 private:
-	// How many retargets in history to include for diff recalc.
+	// Thanks: Balthazar for suggesting the following fix
+	// https://bitcointalk.org/index.php?topic=182430.msg1904506#msg1904506
 	static const int 			nRetargetHistoryFact = 4;
 	// Height at which to apply new rules.
-	static const int 			nHeightForNewRules = 25000;
+	static const int 			nMinHeightForNewRules = 25000;
 	// Max. span between two retargets.
 	static const unsigned int 	nMaxTimeInterval = 14400;
 
@@ -55,10 +62,12 @@ private:
 
 protected:
 
-	bool 				ShouldApplyNewRetargetRules(const CBlockIndex* pindexLast);
+	bool 				ShouldApplyNewRetargetRules(int nHeight);
 	bool 				ShouldApplyRetarget(const CBlockIndex* pindexLast, const CBlock *pblock);
 
 public:
+	static const SRetargetParams* sOldRules;
+	static const SRetargetParams* sNewRules;
 
 	CMainNetDiff(CBigNum bnProofOfWorkLimit) : CDiff(bnProofOfWorkLimit)
 	{ }

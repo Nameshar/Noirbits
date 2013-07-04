@@ -7,23 +7,28 @@
 
 #include "diff.h"
 
-bool CMainNetDiff::ShouldApplyNewRetargetRules(const CBlockIndex* pindexLast)
+const struct SRetargetParams* CMainNetDiff::sNewRules = new SRetargetParams(3600, 120);
+const struct SRetargetParams* CMainNetDiff::sOldRules = new SRetargetParams(7200, 120);
+
+inline bool CMainNetDiff::ShouldApplyNewRetargetRules(int nHeight)
 {
-	return pindexLast->nHeight + 1 >= nMinHeightForNewRules;
+	return nHeight + 1 >= nMinHeightForNewRules;
 }
 
 bool CMainNetDiff::ShouldApplyRetarget(const CBlockIndex* pindexLast, const CBlock *pblock)
 {
 	bool bShouldRetarget = false;
+	const SRetargetParams* params = sOldRules;
 
-	if (ShouldApplyNewRetargetRules(pindexLast))
+	if (ShouldApplyNewRetargetRules(pindexLast->nHeight))
 	{
+		params = sNewRules;
 		// We have exceeded max. time for current difficulty, change (hard limit)
 		bShouldRetarget |= (pindexLast->nTime + nMaxTimeInterval) < pblock->nTime;
 	}
 
 	// We have reached retarget height
-	bShouldRetarget |= (pindexLast->nHeight + 1) % nInterval == 0;
+	bShouldRetarget |= (pindexLast->nHeight + 1) % params->nInterval == 0;
 
 	return bShouldRetarget;
 }
@@ -34,12 +39,13 @@ int64 CMainNetDiff::GetActualTimespan(const CBlockIndex* pindexFirst, const CBlo
 	int64 nActualTimespanMax = 0;
 	int64 nActualTimespanMin = 0;
 
-	bool useNewRules = ShouldApplyNewRetargetRules(pindexLast);
+	bool useNewRules = ShouldApplyNewRetargetRules(pindexLast->nHeight);
+	const SRetargetParams* params = (useNewRules) ? sNewRules : sOldRules;
 
 	if (pindexLast->nHeight > COINFIX1_BLOCK && !useNewRules)
 	{
 		// obtain average actual timespan
-		nActualTimespan = (pindexLast->GetBlockTime() - pindexFirst->GetBlockTime()) / nReTargetHistoryFact;
+		nActualTimespan = (pindexLast->GetBlockTime() - pindexFirst->GetBlockTime()) / nRetargetHistoryFact;
 	}
 	else
 	{
@@ -56,8 +62,8 @@ int64 CMainNetDiff::GetActualTimespan(const CBlockIndex* pindexFirst, const CBlo
 	}
 	else
 	{
-		nActualTimespanMin = nTargetTimespan / 4;
-		nActualTimespanMax = nTargetTimespan * 4;
+		nActualTimespanMin = params->nTargetTimespan / 4;
+		nActualTimespanMax = params->nTargetTimespan * 4;
 	}
 
 	printf("  nActualTimespan = %"PRI64d"  before bounds\n", nActualTimespan);
@@ -85,15 +91,18 @@ int CMainNetDiff::GetBlocksToGoBack(const CBlockIndex* pindexLast)
 {
 	// Fixes an issue where a 51% attack can change difficulty at will.
 	// Go back the full period unless it's the first retarget after genesis. Code courtesy of Art Forz
-	int nBlocksToGoBack = nInterval - 1;
-	if ((pindexLast->nHeight + 1) != nInterval)
+	bool useNewRules = ShouldApplyNewRetargetRules(pindexLast->nHeight);
+	const SRetargetParams* params = (useNewRules) ? sNewRules : sOldRules;
+	int nBlocksToGoBack = params->nInterval - 1;
+
+	if ((pindexLast->nHeight + 1) != params->nInterval)
 	{
-		nBlocksToGoBack = nInterval;
+		nBlocksToGoBack = params->nInterval;
 	}
 
-	if (pindexLast->nHeight > COINFIX1_BLOCK)
+	if (pindexLast->nHeight > COINFIX1_BLOCK && !useNewRules)
 	{
-		nBlocksToGoBack = nReTargetHistoryFact * nInterval;
+		nBlocksToGoBack = nRetargetHistoryFact * params->nInterval;
 	}
 
 	return nBlocksToGoBack;
@@ -108,7 +117,8 @@ unsigned int CMainNetDiff::ComputeMinWork(unsigned int nBase, int64 nTime)
 	CBigNum bnResult;
 	bnResult.SetCompact(nBase);
 
-	bool useNewRules = nBestHeight >= nMinHeightForNewRules;
+	bool useNewRules = ShouldApplyNewRetargetRules(nBestHeight);
+	const SRetargetParams* params = (useNewRules) ? sNewRules : sOldRules;
 
 	while (nTime > 0 && bnResult < bnProofOfWorkLimit)
 	{
@@ -117,7 +127,7 @@ unsigned int CMainNetDiff::ComputeMinWork(unsigned int nBase, int64 nTime)
 		else
 			bnResult = bnResult / 4;
 
-		nTime -= nTargetTimespan * 4;
+		nTime -= params->nTargetTimespan * 4;
 	}
 
 	if (bnResult > bnProofOfWorkLimit)
@@ -128,32 +138,34 @@ unsigned int CMainNetDiff::ComputeMinWork(unsigned int nBase, int64 nTime)
 
 unsigned int CMainNetDiff::GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlock* pblock)
 {
+	bool useNewRules = ShouldApplyNewRetargetRules(pindexLast->nHeight);
+
 	// Genesis block
 	if (pindexLast == NULL)
 		return nProofOfWorkLimit;
 
 	// Check if we should retarget diff.
-	if (!ShouldApplyRetarget(pindexLast, pblock))
+	if (!useNewRules)
 	{
 		return pindexLast->nBits;
 	}
+
+	const SRetargetParams* params = (useNewRules) ? sNewRules : sOldRules;
 
 	// Limit adjustment step
 	int64 nActualTimespan = GetActualTimespan(GetFirstBlock(pindexLast), pindexLast);
 
 	// Retarget
-	CBigNum bnNew, bnOld;
-	bnOld.SetCompact(pindexLast->nBits);
+	CBigNum bnNew;
 	bnNew.SetCompact(pindexLast->nBits);
-	bnNew *= nActualTimespan;
-	bnNew /= nTargetTimespan;
+	bnNew *= nActualTimespan / params->nTargetTimespan;
 
 	if (bnNew > bnProofOfWorkLimit)
 		bnNew = bnProofOfWorkLimit;
 
 	/// debug print
 	printf("GetNextWorkRequired RETARGET\n");
-	printf("nTargetTimespan = %"PRI64d"    nActualTimespan = %"PRI64d"\n", nTargetTimespan, nActualTimespan);
+	printf("nTargetTimespan = %"PRI64d"    nActualTimespan = %"PRI64d"\n", params->nTargetTimespan, nActualTimespan);
 	printf("Before: %08x  %s\n", pindexLast->nBits, CBigNum().SetCompact(pindexLast->nBits).getuint256().ToString().c_str());
 	printf("After:  %08x  %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
 
@@ -166,9 +178,12 @@ unsigned int CMainNetDiff::GetNextWorkRequired(const CBlockIndex* pindexLast, co
 //
 unsigned int CTestNetDiff::ComputeMinWork(unsigned int nBase, int64 nTime)
 {
+	bool useNewRules = ShouldApplyNewRetargetRules(nBestHeight);
+	const SRetargetParams* params = (useNewRules) ? sNewRules : sOldRules;
+
 	// Testnet has min-difficulty blocks
 	// after nTargetSpacing*2 time between blocks:
-	if (nTime > nTargetSpacing*2)
+	if (nTime > params->nTargetSpacing * 2)
 		return bnProofOfWorkLimit.GetCompact();
 
 	return CMainNetDiff::ComputeMinWork(nBase, nTime);
@@ -186,9 +201,12 @@ unsigned int CTestNetDiff::GetNextWorkRequired(const CBlockIndex* pindexLast, co
 
 unsigned int CTestNetDiff::GetTestNetNextTarget(const CBlockIndex* pindexLast, const CBlock *pblock)
 {
+	bool useNewRules = ShouldApplyNewRetargetRules(nBestHeight);
+	const SRetargetParams* params = (useNewRules) ? sNewRules : sOldRules;
+
 	// If the new block's timestamp is more than 2* 10 minutes
 	// then allow mining of a min-difficulty block.
-	if (pblock->nTime > pindexLast->nTime + nTargetSpacing * 2)
+	if (pblock->nTime > pindexLast->nTime + params->nTargetSpacing * 2)
 	{
 		return nProofOfWorkLimit;
 	}
@@ -196,7 +214,7 @@ unsigned int CTestNetDiff::GetTestNetNextTarget(const CBlockIndex* pindexLast, c
 	{
 		// Return the last non-special-min-difficulty-rules-block
 		const CBlockIndex* pindex = pindexLast;
-		while (pindex->pprev && pindex->nHeight % nInterval != 0 && pindex->nBits == nProofOfWorkLimit)
+		while (pindex->pprev && pindex->nHeight % params->nInterval != 0 && pindex->nBits == nProofOfWorkLimit)
 		{
 			pindex = pindex->pprev;
 		}
