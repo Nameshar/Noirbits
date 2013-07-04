@@ -62,7 +62,6 @@ private:
 
 protected:
 
-	bool 				ShouldApplyNewRetargetRules(int nHeight);
 	bool 				ShouldApplyRetarget(const CBlockIndex* pindexLast, const CBlock *pblock);
 
 public:
@@ -75,6 +74,10 @@ public:
 	virtual unsigned int 	ComputeMinWork(unsigned int nBase, int64 nTime);
 	virtual unsigned int 	GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlock* pblock);
 
+	static bool ShouldApplyNewRetargetRules(int nHeight)
+	{
+		return nHeight + 1 >= nMinHeightForNewRules;
+	}
 };
 
 class CTestNetDiff : public CMainNetDiff
@@ -87,7 +90,7 @@ private:
 public:
 
 	CTestNetDiff(CBigNum bnProofOfWorkLimit) : CMainNetDiff(bnProofOfWorkLimit)
-		{ }
+	{ }
 
 	virtual unsigned int 	ComputeMinWork(unsigned int nBase, int64 nTime);
 	virtual unsigned int 	GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlock* pblock);

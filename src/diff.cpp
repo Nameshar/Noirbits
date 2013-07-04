@@ -10,11 +10,6 @@
 const struct SRetargetParams* CMainNetDiff::sNewRules = new SRetargetParams(3600, 120);
 const struct SRetargetParams* CMainNetDiff::sOldRules = new SRetargetParams(7200, 120);
 
-inline bool CMainNetDiff::ShouldApplyNewRetargetRules(int nHeight)
-{
-	return nHeight + 1 >= nMinHeightForNewRules;
-}
-
 bool CMainNetDiff::ShouldApplyRetarget(const CBlockIndex* pindexLast, const CBlock *pblock)
 {
 	bool bShouldRetarget = false;
