@@ -835,20 +835,18 @@ int64 static GetBlockValue(int nHeight, int64 nFees)
     return nSubsidy + nFees;
 }
 
-CDiff* pdiff = (fTestNet) ?  new CTestNetDiff(bnProofOfWorkLimit) : new CMainNetDiff(bnProofOfWorkLimit);
-
 //
 // minimum amount of work that could possibly be required nTime after
 // minimum work required was nBase
 //
 unsigned int ComputeMinWork(unsigned int nBase, int64 nTime)
 {
-    return pdiff->ComputeMinWork(nBase, nTime);
+    return CDiffProvider::GetDiff(nBestHeight)->ComputeMinWork(nBase, nTime);
 }
 
 unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlock *pblock)
 {
-	return pdiff->GetNextWorkRequired(pindexLast, pblock);
+	return CDiffProvider::GetDiff(nBestHeight)->GetNextWorkRequired(pindexLast, pblock);
 }
 
 bool CheckProofOfWork(uint256 hash, unsigned int nBits)
