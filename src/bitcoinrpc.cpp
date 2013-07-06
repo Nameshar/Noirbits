@@ -311,7 +311,9 @@ Value getnetworkhashps(const Array& params, bool fHelp)
             "Returns the estimated network hashes per second based on the last 120 blocks.\n"
             "Pass in [blocks] to override # of blocks, -1 specifies since last difficulty change.");
 
-    return GetNetworkHashPS(params.size() > 0 ? params[0].get_int() : 120);
+    int nBlocks = params.size() > 0 ? boost::lexical_cast<int>(params[0].get_str()) : 120;
+
+    return GetNetworkHashPS(nBlocks);
 }
 
 

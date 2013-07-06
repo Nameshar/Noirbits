@@ -54,7 +54,7 @@ json_spirit::Value CDiff::GetNetworkHashPS(int lookup)
 	// If lookup is -1, then use blocks since last difficulty change.
 	if (lookup <= 0)
 	{
-		int nInterval = CDiffProvider::GetDiff(nBestHeight)->GetRules()->nInterval;
+		int nInterval = this->GetRules()->nInterval;
 
 		lookup = pindexBest->nHeight % nInterval + 1;
 	}

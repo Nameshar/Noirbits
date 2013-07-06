@@ -144,7 +144,7 @@ public:
 			printf("using CTestNetDiff instance\n");
 			return GetTestNetDiff(GetNewDiff());
 		}
-		else if (nHeight >= nMinHeightForNewRules)
+		else if (nHeight + 1 >= nMinHeightForNewRules)
 		{
 			printf("using CMainNetDiff instance\n");
 			return GetNewDiff();
