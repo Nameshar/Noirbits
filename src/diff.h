@@ -137,16 +137,21 @@ public:
 
 	static CDiff* GetDiff(int nHeight)
 	{
+		printf("Diff instance requested for height %d : ", nHeight);
+
 		if (fTestNet)
 		{
+			printf("using CTestNetDiff instance\n");
 			return GetTestNetDiff(GetNewDiff());
 		}
 		else if (nHeight >= nMinHeightForNewRules)
 		{
+			printf("using CMainNetDiff instance\n");
 			return GetNewDiff();
 		}
 		else
 		{
+			printf("using COldNetDiff instance\n");
 			return GetOldDiff();
 		}
 	}

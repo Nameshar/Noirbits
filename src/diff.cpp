@@ -153,7 +153,7 @@ unsigned int COldNetDiff::ComputeMinWork(unsigned int nBase, int64 nTime)
 
 	while (nTime > 0 && bnResult < bnProofOfWorkLimit)
 	{
-		bnResult = bnResult / 4;
+		bnResult *= 4;
 		nTime -= sRules->nTargetTimespan * 4;
 	}
 
@@ -162,7 +162,7 @@ unsigned int COldNetDiff::ComputeMinWork(unsigned int nBase, int64 nTime)
 
 	printf("COldDiff -- ComputeMinWork requested\n");
 	printf("nTargetTimespan = %"PRI64d"\n", sRules->nTargetTimespan);
-	printf("bnResult:  %08x  %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
+	printf("bnResult:  %08x  %s\n", bnResult.GetCompact(), bnResult.getuint256().ToString().c_str());
 
 	return bnResult.GetCompact();
 }
@@ -286,7 +286,7 @@ unsigned int CMainNetDiff::ComputeMinWork(unsigned int nBase, int64 nTime)
 
 	while (nTime > 0 && bnResult < bnProofOfWorkLimit)
 	{
-		bnResult = bnResult * 99 / 55;
+		bnResult *= 99 / 55;
 		nTime -= sRules->nTargetTimespan * 4;
 	}
 
@@ -295,7 +295,7 @@ unsigned int CMainNetDiff::ComputeMinWork(unsigned int nBase, int64 nTime)
 
 	printf("CMainNetDiff -- ComputeMinWork requested\n");
 	printf("nTargetTimespan = %"PRI64d"\n", sRules->nTargetTimespan);
-	printf("bnResult:  %08x  %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
+	printf("bnResult:  %08x  %s\n", bnResult.GetCompact(), bnResult.getuint256().ToString().c_str());
 
 	return bnResult.GetCompact();
 }
