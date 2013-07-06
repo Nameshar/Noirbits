@@ -189,7 +189,7 @@ unsigned int COldNetDiff::GetNextWorkRequired(const CBlockIndex* pindexLast, con
 		bnNew = bnProofOfWorkLimit;
 
 	/// debug print
-	printf("GetNextWorkRequired RETARGET\n");
+	printf("COldDiff -- GetNextWorkRequired RETARGET\n");
 	printf("nTargetTimespan = %"PRI64d"    nActualTimespan = %"PRI64d"\n", sRules->nTargetTimespan, nActualTimespan);
 	printf("Before: %08x  %s\n", pindexLast->nBits, CBigNum().SetCompact(pindexLast->nBits).getuint256().ToString().c_str());
 	printf("After:  %08x  %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
@@ -315,7 +315,7 @@ unsigned int CMainNetDiff::GetNextWorkRequired(const CBlockIndex* pindexLast, co
 		bnNew = bnProofOfWorkLimit;
 
 	/// debug print
-	printf("GetNextWorkRequired RETARGET\n");
+	printf("CMainNetDiff -- GetNextWorkRequired RETARGET\n");
 	printf("nTargetTimespan = %"PRI64d"    nActualTimespan = %"PRI64d"\n", sRules->nTargetTimespan, nActualTimespan);
 	printf("Before: %08x  %s\n", pindexLast->nBits, CBigNum().SetCompact(pindexLast->nBits).getuint256().ToString().c_str());
 	printf("After:  %08x  %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
