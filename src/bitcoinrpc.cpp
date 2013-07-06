@@ -5,6 +5,7 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include "diff.h"
 #include "main.h"
 #include "wallet.h"
 #include "db.h"
@@ -320,7 +321,12 @@ Value GetNetworkHashPS(int lookup) {
 
     // If lookup is -1, then use blocks since last difficulty change.
     if (lookup <= 0)
-        lookup = pindexBest->nHeight % 2016 + 1;
+    {
+    	int nInterval = CMainNetDiff::ShouldApplyNewRetargetRules(pindexBest->nHeight) ?
+    			CMainNetDiff::sNewRules->nInterval : CMainNetDiff::sOldRules->nInterval;
+
+        lookup = pindexBest->nHeight % nInterval + 1;
+    }
 
     // If lookup is larger than chain, then set it to chain length.
     if (lookup > pindexBest->nHeight)
