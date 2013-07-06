@@ -1787,7 +1787,7 @@ bool ProcessBlock(CNode* pfrom, CBlock* pblock)
 
     // Store to disk
     if (!pblock->AcceptBlock())
-        return error("ProcessBlock() : AcceptBlock FAILED");
+        return error("ProcessBlock() : AcceptBlock %d FAILED", pindexBest->nHeight);
 
     // Recursively process any orphan blocks that depended on this one
     vector<uint256> vWorkQueue;

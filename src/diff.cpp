@@ -10,7 +10,7 @@
 const struct SRetargetParams* CMainNetDiff::sRules = new SRetargetParams(3600, 120);
 const struct SRetargetParams* COldNetDiff::sRules = new SRetargetParams(7200, 120);
 
-const CBigNum CDiffProvider::bnProofOfWorkLimit = 0;
+const CBigNum CDiffProvider::bnProofOfWorkLimit(~uint256(0) >> 20);
 
 CDiff* CDiffProvider::pnewDiff = NULL;
 CDiff* CDiffProvider::poldDiff = NULL;
@@ -160,6 +160,10 @@ unsigned int COldNetDiff::ComputeMinWork(unsigned int nBase, int64 nTime)
 	if (bnResult > bnProofOfWorkLimit)
 		bnResult = bnProofOfWorkLimit;
 
+	printf("COldDiff -- ComputeMinWork requested\n");
+	printf("nTargetTimespan = %"PRI64d"\n", sRules->nTargetTimespan);
+	printf("bnResult:  %08x  %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
+
 	return bnResult.GetCompact();
 }
 
@@ -183,12 +187,13 @@ unsigned int COldNetDiff::GetNextWorkRequired(const CBlockIndex* pindexLast, con
 	// Retarget
 	CBigNum bnNew;
 	bnNew.SetCompact(pindexLast->nBits);
-	bnNew *= nActualTimespan / sRules->nTargetTimespan;
+	bnNew *= nActualTimespan;
+	bnNew /= sRules->nTargetTimespan;
 
 	if (bnNew > bnProofOfWorkLimit)
 		bnNew = bnProofOfWorkLimit;
 
-	/// debug print
+	// Debug print
 	printf("COldDiff -- GetNextWorkRequired RETARGET\n");
 	printf("nTargetTimespan = %"PRI64d"    nActualTimespan = %"PRI64d"\n", sRules->nTargetTimespan, nActualTimespan);
 	printf("Before: %08x  %s\n", pindexLast->nBits, CBigNum().SetCompact(pindexLast->nBits).getuint256().ToString().c_str());
@@ -288,6 +293,10 @@ unsigned int CMainNetDiff::ComputeMinWork(unsigned int nBase, int64 nTime)
 	if (bnResult > bnProofOfWorkLimit)
 		bnResult = bnProofOfWorkLimit;
 
+	printf("CMainNetDiff -- ComputeMinWork requested\n");
+	printf("nTargetTimespan = %"PRI64d"\n", sRules->nTargetTimespan);
+	printf("bnResult:  %08x  %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
+
 	return bnResult.GetCompact();
 }
 
@@ -309,7 +318,8 @@ unsigned int CMainNetDiff::GetNextWorkRequired(const CBlockIndex* pindexLast, co
 	// Retarget
 	CBigNum bnNew;
 	bnNew.SetCompact(pindexLast->nBits);
-	bnNew *= nActualTimespan / sRules->nTargetTimespan;
+	bnNew *= nActualTimespan;
+	bnNew /= sRules->nTargetTimespan;
 
 	if (bnNew > bnProofOfWorkLimit)
 		bnNew = bnProofOfWorkLimit;
