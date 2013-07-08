@@ -5,6 +5,7 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include "diff.h"
 #include "main.h"
 #include "wallet.h"
 #include "db.h"
@@ -114,23 +115,7 @@ double GetDifficulty(const CBlockIndex* blockindex = NULL)
             blockindex = pindexBest;
     }
 
-    int nShift = (blockindex->nBits >> 24) & 0xff;
-
-    double dDiff =
-        (double)0x0000ffff / (double)(blockindex->nBits & 0x00ffffff);
-
-    while (nShift < 29)
-    {
-        dDiff *= 256.0;
-        nShift++;
-    }
-    while (nShift > 29)
-    {
-        dDiff /= 256.0;
-        nShift--;
-    }
-
-    return dDiff;
+    return CDiffProvider::GetDiff(blockindex->nHeight)->GetDifficulty(blockindex);
 }
 
 
@@ -315,25 +300,7 @@ Value getdifficulty(const Array& params, bool fHelp)
 
 // Litecoin: Return average network hashes per second based on last number of blocks.
 Value GetNetworkHashPS(int lookup) {
-    if (pindexBest == NULL)
-        return 0;
-
-    // If lookup is -1, then use blocks since last difficulty change.
-    if (lookup <= 0)
-        lookup = pindexBest->nHeight % 2016 + 1;
-
-    // If lookup is larger than chain, then set it to chain length.
-    if (lookup > pindexBest->nHeight)
-        lookup = pindexBest->nHeight;
-
-    CBlockIndex* pindexPrev = pindexBest;
-    for (int i = 0; i < lookup; i++)
-        pindexPrev = pindexPrev->pprev;
-
-    double timeDiff = pindexBest->GetBlockTime() - pindexPrev->GetBlockTime();
-    double timePerBlock = timeDiff / lookup;
-
-    return (boost::int64_t)(((double)GetDifficulty() * pow(2.0, 32)) / timePerBlock);
+	return CDiffProvider::GetDiff(nBestHeight)->GetNetworkHashPS(lookup);
 }
 
 Value getnetworkhashps(const Array& params, bool fHelp)
@@ -344,7 +311,9 @@ Value getnetworkhashps(const Array& params, bool fHelp)
             "Returns the estimated network hashes per second based on the last 120 blocks.\n"
             "Pass in [blocks] to override # of blocks, -1 specifies since last difficulty change.");
 
-    return GetNetworkHashPS(params.size() > 0 ? params[0].get_int() : 120);
+    int nBlocks = params.size() > 0 ? boost::lexical_cast<int>(params[0].get_str()) : 120;
+
+    return GetNetworkHashPS(nBlocks);
 }
 
 

@@ -1,0 +1,185 @@
+/*
+ * diff.h
+ *
+ *  Created on: Jul 3, 2013
+ *      Author: fatbeard
+ */
+
+#ifndef DIFF_H_
+#define DIFF_H_
+
+#include "init.h"
+#include "main.h"
+
+#include "json/json_spirit_reader_template.h"
+#include "json/json_spirit_writer_template.h"
+#include "json/json_spirit_utils.h"
+
+struct SRetargetParams
+{
+	int64 nTargetTimespan;
+	int64 nTargetSpacing;
+	int64 nInterval;
+
+	SRetargetParams(int64 nTargetTimespan, int64 nTargetSpacing)
+	{
+		this->nTargetTimespan = nTargetTimespan;
+		this->nTargetSpacing = nTargetSpacing;
+		this->nInterval = nTargetTimespan / nTargetSpacing;
+	}
+};
+
+class CDiff
+{
+protected:
+	// Fields
+	CBigNum 		bnProofOfWorkLimit;
+	unsigned int	nProofOfWorkLimit;
+
+public:
+
+	CDiff(CBigNum bnProofOfWorkLimit)
+	{
+		this->bnProofOfWorkLimit = bnProofOfWorkLimit;
+		this->nProofOfWorkLimit = bnProofOfWorkLimit.GetCompact();
+	}
+
+	virtual ~CDiff() { }
+
+	virtual unsigned int 			ComputeMinWork(unsigned int nBase, int64 nTime) = 0;
+	virtual double					GetDifficulty(const CBlockIndex* blockindex);
+	virtual unsigned int 			GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlock* pblock) = 0;
+	virtual json_spirit::Value		GetNetworkHashPS(int lookup);
+	virtual const SRetargetParams* 	GetRules() = 0;
+	virtual bool					ShouldApplyRetarget(const CBlockIndex* pindexLast, const CBlock* pblock) = 0;
+};
+
+class COldNetDiff : public CDiff
+{
+private:
+	// Thanks: Balthazar for suggesting the following fix
+	// https://bitcointalk.org/index.php?topic=182430.msg1904506#msg1904506
+	static const int 				nRetargetHistoryFact = 4;
+
+	// Methods
+	int64				GetActualTimespan(const CBlockIndex* pindexFirst, const CBlockIndex* pindexLast);
+	int 				GetBlocksToGoBack(const CBlockIndex* pindexLast);
+	const CBlockIndex*	GetFirstBlock(const CBlockIndex* pindexLast);
+
+public:
+	static const SRetargetParams* 	sRules;
+
+	COldNetDiff(CBigNum bnProofOfWorkLimit) : CDiff(bnProofOfWorkLimit)
+	{ }
+
+	virtual unsigned int 			ComputeMinWork(unsigned int nBase, int64 nTime);
+	virtual unsigned int 			GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlock* pblock);
+	virtual const SRetargetParams* 	GetRules();
+	virtual bool					ShouldApplyRetarget(const CBlockIndex* pindexLast, const CBlock* pblock);
+};
+
+class CMainNetDiff : public CDiff
+{
+private:
+	// Max. span between two retargets.
+	static const unsigned int 	nMaxTimeInterval = 14400;
+
+	// Methods
+	int64				GetActualTimespan(const CBlockIndex* pindexFirst, const CBlockIndex* pindexLast);
+	int 				GetBlocksToGoBack(const CBlockIndex* pindexLast);
+	const CBlockIndex*	GetFirstBlock(const CBlockIndex* pindexLast);
+
+public:
+	static const SRetargetParams* sRules;
+
+	CMainNetDiff(CBigNum bnProofOfWorkLimit) : CDiff(bnProofOfWorkLimit)
+	{ }
+
+	virtual unsigned int 			ComputeMinWork(unsigned int nBase, int64 nTime);
+	virtual unsigned int 			GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlock* pblock);
+	virtual const SRetargetParams* 	GetRules();
+	virtual bool					ShouldApplyRetarget(const CBlockIndex* pindexLast, const CBlock* pblock);
+
+};
+
+class CTestNetDiff : public CDiff
+{
+private:
+	CDiff* 			pparentRules;
+	// Methods
+	unsigned int 	GetTestNetNextTarget(const CBlockIndex* pindexLast, const CBlock *pblock);
+
+public:
+
+	CTestNetDiff(CBigNum bnProofOfWorkLimit, CDiff* parentDiff) : CDiff(bnProofOfWorkLimit)
+	{
+		this->pparentRules = parentDiff;
+	}
+
+	virtual unsigned int 			ComputeMinWork(unsigned int nBase, int64 nTime);
+	virtual unsigned int 			GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlock* pblock);
+	virtual const SRetargetParams* 	GetRules();
+	virtual bool					ShouldApplyRetarget(const CBlockIndex* pindexLast, const CBlock* pblock);
+};
+
+/**
+ * Provides an instance of CDiff to perform difficulty retargets depending on height.
+ */
+class CDiffProvider
+{
+
+public:
+	static const CBigNum bnProofOfWorkLimit;
+
+	static CDiff* pnewDiff;
+	static CDiff* poldDiff;
+	static CDiff* ptestDiff;
+
+	static CDiff* GetDiff(int nHeight)
+	{
+		printf("Diff instance requested for height %d : ", nHeight);
+
+		if (fTestNet)
+		{
+			printf("using CTestNetDiff instance\n");
+			return GetTestNetDiff(GetNewDiff());
+		}
+		else if (nHeight + 1 >= nMinHeightForNewRules)
+		{
+			printf("using CMainNetDiff instance\n");
+			return GetNewDiff();
+		}
+		else
+		{
+			printf("using COldNetDiff instance\n");
+			return GetOldDiff();
+		}
+	}
+
+private:
+	// Height at which to apply new rules.
+	static const int nMinHeightForNewRules = 25020;
+
+	inline static CDiff* GetOldDiff()
+	{
+		if (poldDiff == NULL) poldDiff = new COldNetDiff(bnProofOfWorkLimit);
+
+		return poldDiff;
+	}
+
+	inline static CDiff* GetNewDiff()
+	{
+		if (pnewDiff == NULL) pnewDiff = new CMainNetDiff(bnProofOfWorkLimit);
+
+		return pnewDiff;
+	}
+
+	inline static CDiff* GetTestNetDiff(CDiff* pparentDiff)
+	{
+		if (ptestDiff == NULL) ptestDiff = new CTestNetDiff(bnProofOfWorkLimit, pparentDiff);
+
+		return ptestDiff;
+	}
+};
+
+#endif /* DIFF_H_ */
