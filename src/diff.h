@@ -36,7 +36,29 @@ protected:
 	CBigNum 		bnProofOfWorkLimit;
 	unsigned int	nProofOfWorkLimit;
 
+
 public:
+
+	static double GetDifficultyFromTargetBits(unsigned int nTargetBits)
+	{
+		printf("Getting difficulty from targetsBits : %u\n", nTargetBits);
+
+		int nShift = (nTargetBits >> 24) & 0xff;
+		double dDiff = (double)0x0000ffff / (double)(nTargetBits & 0x00ffffff);
+
+		while (nShift < 29)
+		{
+			dDiff *= 256.0;
+			nShift++;
+		}
+		while (nShift > 29)
+		{
+			dDiff /= 256.0;
+			nShift--;
+		}
+
+		return dDiff;
+	}
 
 	CDiff(CBigNum bnProofOfWorkLimit)
 	{

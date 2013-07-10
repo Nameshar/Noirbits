@@ -5,6 +5,7 @@
  *      Author: fatbeard
  */
 
+#include <vector>
 #include "diff.h"
 
 const struct SRetargetParams* CMainNetDiff::sRules = new SRetargetParams(3600, 120);
@@ -28,22 +29,22 @@ double CDiff::GetDifficulty(const CBlockIndex* blockindex = NULL)
 			blockindex = pindexBest;
 	}
 
-	int nShift = (blockindex->nBits >> 24) & 0xff;
+	return GetDifficultyFromTargetBits(blockindex->nBits);
+}
 
-	double dDiff = (double)0x0000ffff / (double)(blockindex->nBits & 0x00ffffff);
+struct TargetSpan
+{
+	double difficulty;
+	unsigned int hashrate;
+	unsigned int blockCount;
+};
 
-	while (nShift < 29)
-	{
-		dDiff *= 256.0;
-		nShift++;
-	}
-	while (nShift > 29)
-	{
-		dDiff /= 256.0;
-		nShift--;
-	}
+static double CalculateHashrate(CBlockIndex* first, CBlockIndex* last)
+{
+	double timeDiff = last->GetBlockTime() - first->GetBlockTime();
+	double timePerBlock = timeDiff / (last->nHeight - first->nHeight);
 
-	return dDiff;
+	return CDiff::GetDifficultyFromTargetBits(last->nBits) * pow(2.0, 32) / timePerBlock;
 }
 
 json_spirit::Value CDiff::GetNetworkHashPS(int lookup)
@@ -55,7 +56,6 @@ json_spirit::Value CDiff::GetNetworkHashPS(int lookup)
 	if (lookup <= 0)
 	{
 		int nInterval = this->GetRules()->nInterval;
-
 		lookup = pindexBest->nHeight % nInterval + 1;
 	}
 
@@ -64,13 +64,32 @@ json_spirit::Value CDiff::GetNetworkHashPS(int lookup)
 		lookup = pindexBest->nHeight;
 
 	CBlockIndex* pindexPrev = pindexBest;
+	CBlockIndex* plastRetarget = pindexBest;
+	std::vector<TargetSpan> spans;
+
 	for (int i = 0; i < lookup; i++)
+	{
 		pindexPrev = pindexPrev->pprev;
 
-	double timeDiff = pindexBest->GetBlockTime() - pindexPrev->GetBlockTime();
-	double timePerBlock = timeDiff / lookup;
+		if (pindexPrev->nBits != plastRetarget->nBits || i == lookup)
+		{
+			TargetSpan span;
+			span.difficulty = GetDifficulty(plastRetarget);
+			span.blockCount = plastRetarget->nHeight - pindexPrev->nHeight;
+			span.hashrate = CalculateHashrate(pindexPrev, plastRetarget);
 
-	return (boost::int64_t)(((double)GetDifficulty() * pow(2.0, 32)) / timePerBlock);
+			spans.push_back(span);
+			plastRetarget = pindexPrev;
+		}
+	}
+
+	double hashrate = 0;
+	for (std::vector<TargetSpan>::iterator it = spans.begin(); it != spans.end(); ++it)
+	{
+		hashrate += (*it).hashrate * (*it).blockCount;
+	}
+
+	return (boost::int64_t)(hashrate / lookup);
 }
 
 bool COldNetDiff::ShouldApplyRetarget(const CBlockIndex* pindexLast, const CBlock* pblock)
