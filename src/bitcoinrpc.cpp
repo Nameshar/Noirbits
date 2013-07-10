@@ -297,6 +297,18 @@ Value getdifficulty(const Array& params, bool fHelp)
     return GetDifficulty();
 }
 
+Value getdifffrombits(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() != 1)
+        throw runtime_error(
+            "getdifffrombits targetbits\n"
+            "Returns the proof-of-work difficulty as a multiple of the minimum difficulty for a given target");
+
+    unsigned int nTargetBits = boost::lexical_cast<unsigned int>(params[0].get_str());
+    CBigNum nTarget(~uint256(0) >> nTargetBits);
+
+    return CDiff::GetDifficultyFromTargetBits(nTarget.GetCompact());
+}
 
 // Litecoin: Return average network hashes per second based on last number of blocks.
 Value GetNetworkHashPS(int lookup) {
@@ -311,11 +323,10 @@ Value getnetworkhashps(const Array& params, bool fHelp)
             "Returns the estimated network hashes per second based on the last 120 blocks.\n"
             "Pass in [blocks] to override # of blocks, -1 specifies since last difficulty change.");
 
-    int nBlocks = params.size() > 0 ? boost::lexical_cast<int>(params[0].get_str()) : 120;
+    int nBlocks = params.size() > 0 ? params[0].get_int() : 60;
 
     return GetNetworkHashPS(nBlocks);
 }
-
 
 Value getgenerate(const Array& params, bool fHelp)
 {
@@ -326,7 +337,6 @@ Value getgenerate(const Array& params, bool fHelp)
 
     return GetBoolArg("-gen");
 }
-
 
 Value setgenerate(const Array& params, bool fHelp)
 {
@@ -2296,6 +2306,7 @@ static const CRPCCommand vRPCCommands[] =
     { "getconnectioncount",     &getconnectioncount,     true },
     { "getpeerinfo",            &getpeerinfo,            true },
     { "getdifficulty",          &getdifficulty,          true },
+    { "getdifffrombits",        &getdifffrombits,        true },
     { "getnetworkhashps",       &getnetworkhashps,       true },
     { "getgenerate",            &getgenerate,            true },
     { "setgenerate",            &setgenerate,            true },
@@ -3208,6 +3219,7 @@ Array RPCConvertValues(const std::string &strMethod, const std::vector<std::stri
     if (strMethod == "sendtoaddress"          && n > 1) ConvertTo<double>(params[1]);
     if (strMethod == "settxfee"               && n > 0) ConvertTo<double>(params[0]);
     if (strMethod == "setmininput"            && n > 0) ConvertTo<double>(params[0]);
+    if (strMethod == "getnetworkhashps"  	  && n > 0) ConvertTo<int>(params[0]);
     if (strMethod == "getreceivedbyaddress"   && n > 1) ConvertTo<boost::int64_t>(params[1]);
     if (strMethod == "getreceivedbyaccount"   && n > 1) ConvertTo<boost::int64_t>(params[1]);
     if (strMethod == "listreceivedbyaddress"  && n > 0) ConvertTo<boost::int64_t>(params[0]);
