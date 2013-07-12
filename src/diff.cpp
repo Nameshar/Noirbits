@@ -75,7 +75,7 @@ json_spirit::Value CDiff::GetNetworkHashPS(int lookup)
 		{
 			TargetSpan span;
 			span.difficulty = GetDifficulty(plastRetarget);
-			span.timespan = plastRetarget->GetBlockTime() - pindexPrev->GetBlockTime();
+			span.time = plastRetarget->GetBlockTime() - pindexPrev->GetBlockTime();
 			span.hashes = span.difficulty * pow(2.0, 32);
 
 			spans.push_back(span);
@@ -88,7 +88,7 @@ json_spirit::Value CDiff::GetNetworkHashPS(int lookup)
 	for (std::vector<TargetSpan>::iterator it = spans.begin(); it != spans.end(); ++it)
 	{
 		hashes += (*it).hashes;
-		totalTime += (*it).timespan;
+		totalTime += (*it).time;
 	}
 
 	return (boost::int64_t)(hashes / totalTime);
