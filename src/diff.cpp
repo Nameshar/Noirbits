@@ -74,7 +74,7 @@ json_spirit::Value CDiff::GetNetworkHashPS(int lookup)
 		if (pindexPrev->nBits != plastRetarget->nBits || i + 1 == lookup)
 		{
 			TargetSpan span;
-			span.difficulty = GetDifficulty(plastRetarget);
+			span.difficulty = CDiff::GetDifficulty(plastRetarget);
 			span.time = plastRetarget->GetBlockTime() - pindexPrev->GetBlockTime();
 			span.hashes = span.difficulty * pow(2.0, 32);
 
