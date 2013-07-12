@@ -35,8 +35,8 @@ double CDiff::GetDifficulty(const CBlockIndex* blockindex = NULL)
 struct TargetSpan
 {
 	double difficulty;
-	int hashrate;
-	int blockCount;
+	int hashes;
+	int time;
 };
 
 static int CalculateHashrate(CBlockIndex* first, CBlockIndex* last)
@@ -44,7 +44,7 @@ static int CalculateHashrate(CBlockIndex* first, CBlockIndex* last)
 	double timeDiff = last->GetBlockTime() - first->GetBlockTime();
 	double timePerBlock = timeDiff / (last->nHeight - first->nHeight);
 
-	return (int) (CDiff::GetDifficultyFromTargetBits(last->nBits) * pow(2.0, 32) / timePerBlock);
+	return (int) (CDiff::GetDifficulty(last) * pow(2.0, 32) / timePerBlock);
 }
 
 json_spirit::Value CDiff::GetNetworkHashPS(int lookup)
@@ -75,21 +75,23 @@ json_spirit::Value CDiff::GetNetworkHashPS(int lookup)
 		{
 			TargetSpan span;
 			span.difficulty = GetDifficulty(plastRetarget);
-			span.blockCount = plastRetarget->nHeight - pindexPrev->nHeight;
-			span.hashrate = CalculateHashrate(pindexPrev, plastRetarget);
+			span.timespan = plastRetarget->GetBlockTime() - pindexPrev->GetBlockTime();
+			span.hashes = span.difficulty * pow(2.0, 32);
 
 			spans.push_back(span);
 			plastRetarget = pindexPrev;
 		}
 	}
 
-	int hashrate = 0;
+	int hashes = 0;
+	int totalTime = 0;
 	for (std::vector<TargetSpan>::iterator it = spans.begin(); it != spans.end(); ++it)
 	{
-		hashrate += (*it).hashrate * (*it).blockCount;
+		hashes += (*it).hashes;
+		totalTime += (*it).timespan;
 	}
 
-	return (boost::int64_t)(hashrate / lookup);
+	return (boost::int64_t)(hashes / totalTime);
 }
 
 bool COldNetDiff::ShouldApplyRetarget(const CBlockIndex* pindexLast, const CBlock* pblock)
@@ -225,13 +227,6 @@ const SRetargetParams* 	COldNetDiff::GetRules()
 {
 	return sRules;
 }
-
-
-
-
-
-
-
 
 bool CMainNetDiff::ShouldApplyRetarget(const CBlockIndex* pindexLast, const CBlock* pblock)
 {
