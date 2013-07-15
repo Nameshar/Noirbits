@@ -51,7 +51,6 @@ static const int fHaveUPnP = true;
 static const int fHaveUPnP = false;
 #endif
 
-
 extern CScript COINBASE_FLAGS;
 
 
