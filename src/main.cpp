@@ -2251,20 +2251,11 @@ bool CAlert::ProcessAlert()
                 safeStatus = singleQuote+safeStatus+singleQuote;
                 boost::replace_all(strCmd, "%s", safeStatus);
 
-                if (fThread)
-                    boost::thread t(runCommand, strCmd); // thread runs free
-                else
-                    runCommand(strCmd);
+                boost::thread t(runCommand, strCmd); // thread runs free
             }
         }
-
-    if (!strCmd.empty())
-    {
-        boost::replace_all(strCmd, "%s", wtxIn.GetHash().GetHex());
-        boost::thread t(runCommand, strCmd); // thread runs free
-    }   
-        }
-    }
+	
+}
 
     printf("accepted alert %d, AppliesToMe()=%d\n", nID, AppliesToMe());
 
