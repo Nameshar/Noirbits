@@ -304,6 +304,9 @@ Value getdifffrombits(const Array& params, bool fHelp)
             "getdifffrombits targetbits\n"
             "Returns the proof-of-work difficulty as a multiple of the minimum difficulty for a given target");
 
+    unsigned int nTargetBits = boost::lexical_cast<unsigned int>(params[0].get_str());
+    CBigNum nTarget(~uint256(0) >> nTargetBits);
+
     return CDiff::GetDifficultyFromTargetBits(nTarget.GetCompact());
 }
 
