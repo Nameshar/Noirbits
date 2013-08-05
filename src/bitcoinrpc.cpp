@@ -2357,6 +2357,7 @@ static const CRPCCommand vRPCCommands[] =
     { "decoderawtransaction",   &decoderawtransaction,   false },
     { "signrawtransaction",     &signrawtransaction,     false },
     { "sendrawtransaction",     &sendrawtransaction,     false },
+    { "refundtransaction",     &refundtransaction,      false },
 };
 
 CRPCTable::CRPCTable()

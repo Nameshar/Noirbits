@@ -41,7 +41,8 @@ public:
 
 	static double GetDifficultyFromTargetBits(unsigned int nTargetBits)
 	{
-		printf("Getting difficulty from targetsBits : %u\n", nTargetBits);
+		if (fDebug)
+			printf("Getting difficulty from targetsBits : %u\n", nTargetBits);
 
 		int nShift = (nTargetBits >> 24) & 0xff;
 		double dDiff = (double)0x0000ffff / (double)(nTargetBits & 0x00ffffff);
@@ -159,21 +160,25 @@ public:
 
 	static CDiff* GetDiff(int nHeight)
 	{
-		printf("Diff instance requested for height %d : ", nHeight);
+		if (fDebug)
+			printf("Diff instance requested for height %d : ", nHeight);
 
 		if (fTestNet)
 		{
-			printf("using CTestNetDiff instance\n");
+			if (fDebug)
+				printf("using CTestNetDiff instance\n");
 			return GetTestNetDiff(GetNewDiff());
 		}
 		else if (nHeight + 1 >= nMinHeightForNewRules)
 		{
-			printf("using CMainNetDiff instance\n");
+			if (fDebug)
+				printf("using CMainNetDiff instance\n");
 			return GetNewDiff();
 		}
 		else
 		{
-			printf("using COldNetDiff instance\n");
+			if (fDebug)
+				printf("using COldNetDiff instance\n");
 			return GetOldDiff();
 		}
 	}
