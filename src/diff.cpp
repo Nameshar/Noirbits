@@ -14,6 +14,7 @@ const struct SRetargetParams* COldNetDiff::sRules = new SRetargetParams(7200, 12
 const CBigNum CDiffProvider::bnProofOfWorkLimit(~uint256(0) >> 20);
 
 CDiff* CDiffProvider::pnewDiff = NULL;
+CDiff* CDiffProvider::pdynDiff = NULL;
 CDiff* CDiffProvider::poldDiff = NULL;
 CDiff* CDiffProvider::ptestDiff = NULL;
 
@@ -352,7 +353,21 @@ const SRetargetParams* 	CMainNetDiff::GetRules()
 	return sRules;
 }
 
+// DYNAMIC DIFF
 
+bool CDynamicDiff::ShouldApplyRetarget(const CBlockIndex* pindexLast, const CBlock* pblock)
+{
+	const CBlockIndex* pindexFirst = pindexLast;
+	for (int i = 0; i < CMainNetDiff::GetRules()->nInterval; i++)
+	{
+		pindexFirst = pindexFirst->pprev;
+	}
+
+	double totalTime = pindexLast->nTime - pindexFirst->nTime;
+	double targetTime = CMainNetDiff::GetRules()->nTargetTimespan;
+
+	return (totalTime > targetTime * 1.10 || totalTime < targetTime / 1.10);
+}
 
 //
 // minimum amount of work that could possibly be required nTime after

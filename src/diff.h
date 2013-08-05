@@ -125,6 +125,17 @@ public:
 
 };
 
+class CDynamicDiff : public CMainNetDiff
+{
+
+public:
+	CDynamicDiff(CBigNum bnProofOfWorkLimit) : CMainNetDiff(bnProofOfWorkLimit)
+	{ }
+
+	virtual bool					ShouldApplyRetarget(const CBlockIndex* pindexLast, const CBlock* pblock);
+
+};
+
 class CTestNetDiff : public CDiff
 {
 private:
@@ -155,6 +166,7 @@ public:
 	static const CBigNum bnProofOfWorkLimit;
 
 	static CDiff* pnewDiff;
+	static CDiff* pdynDiff;
 	static CDiff* poldDiff;
 	static CDiff* ptestDiff;
 
@@ -167,13 +179,19 @@ public:
 		{
 			if (fDebug)
 				printf("using CTestNetDiff instance\n");
-			return GetTestNetDiff(GetNewDiff());
+			return GetTestNetDiff(GetDynamicDiff());
 		}
-		else if (nHeight + 1 >= nMinHeightForNewRules)
+		else if (nHeight + 1 >= nMinHeightForNewRules && nHeight < nMinHeightForDynamicRules)
 		{
 			if (fDebug)
 				printf("using CMainNetDiff instance\n");
 			return GetNewDiff();
+		}
+		else if (nHeight + 1 >= nMinHeightForDynamicRules)
+		{
+			if (fDebug)
+				printf("using CMainNetDiff instance\n");
+			return GetDynamicDiff();
 		}
 		else
 		{
@@ -186,6 +204,7 @@ public:
 private:
 	// Height at which to apply new rules.
 	static const int nMinHeightForNewRules = 25020;
+	static const int nMinHeightForDynamicRules = 33333;
 
 	inline static CDiff* GetOldDiff()
 	{
@@ -199,6 +218,15 @@ private:
 		if (pnewDiff == NULL) pnewDiff = new CMainNetDiff(bnProofOfWorkLimit);
 
 		return pnewDiff;
+	}
+
+	inline static CDiff* GetDynamicDiff()
+	{
+		if (pdynDiff == NULL) {
+			pdynDiff = new CDynamicDiff(bnProofOfWorkLimit);
+		}
+
+		return pdynDiff;
 	}
 
 	inline static CDiff* GetTestNetDiff(CDiff* pparentDiff)

@@ -55,6 +55,7 @@ extern Value createrawtransaction(const Array& params, bool fHelp);
 extern Value decoderawtransaction(const Array& params, bool fHelp);
 extern Value signrawtransaction(const Array& params, bool fHelp);
 extern Value sendrawtransaction(const Array& params, bool fHelp);
+extern Value refundtransaction(const Array& params, bool fHelp);
 
 const Object emptyobj;
 
@@ -2357,7 +2358,7 @@ static const CRPCCommand vRPCCommands[] =
     { "decoderawtransaction",   &decoderawtransaction,   false },
     { "signrawtransaction",     &signrawtransaction,     false },
     { "sendrawtransaction",     &sendrawtransaction,     false },
-    { "refundtransaction",     &refundtransaction,      false },
+    { "refundtransaction",      &refundtransaction,      false },
 };
 
 CRPCTable::CRPCTable()
