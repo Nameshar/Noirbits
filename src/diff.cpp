@@ -358,13 +358,16 @@ const SRetargetParams* 	CMainNetDiff::GetRules()
 bool CDynamicDiff::ShouldApplyRetarget(const CBlockIndex* pindexLast, const CBlock* pblock)
 {
 	const CBlockIndex* pindexFirst = pindexLast;
-	for (int i = 0; i < CMainNetDiff::GetRules()->nInterval; i++)
+
+	if (nBestHeight < CMainNetDiff::sRules->nInterval) return false;
+
+	for (int i = 0; i < CMainNetDiff::sRules->nInterval; i++)
 	{
 		pindexFirst = pindexFirst->pprev;
 	}
 
 	double totalTime = pindexLast->nTime - pindexFirst->nTime;
-	double targetTime = CMainNetDiff::GetRules()->nTargetTimespan;
+	double targetTime = CMainNetDiff::sRules->nTargetTimespan;
 
 	return (totalTime > targetTime * 1.10 || totalTime < targetTime / 1.10);
 }
