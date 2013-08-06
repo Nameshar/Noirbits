@@ -388,7 +388,7 @@ bool CDynamicDiff::ShouldApplyRetarget(const CBlockIndex* pindexLast, const CBlo
 {
 	const CBlockIndex* pindexFirst = pindexLast;
 
-	if (nBestHeight < CMainNetDiff::sRules->nInterval) return false;
+	if (nBestHeight < CMainNetDiff::sRules->nInterval * 4) return false;
 
 	if (false && GetAdjustedTime() - pindexLast->GetBlockTime() > CMainNetDiff::sRules->nTargetTimespan * 5)
 		return true;
