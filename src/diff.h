@@ -128,6 +128,9 @@ public:
 class CDynamicDiff : public CMainNetDiff
 {
 
+private:
+	int64				GetActualTimespan(const CBlockIndex* pindexFirst, const CBlockIndex* pindexLast);
+
 public:
 	CDynamicDiff(CBigNum bnProofOfWorkLimit) : CMainNetDiff(bnProofOfWorkLimit)
 	{ }

@@ -355,21 +355,53 @@ const SRetargetParams* 	CMainNetDiff::GetRules()
 
 // DYNAMIC DIFF
 
+int64 CDynamicDiff::GetActualTimespan(const CBlockIndex* pindexFirst, const CBlockIndex* pindexLast)
+{
+	int64 nActualTimespan = 0;
+	int64 nActualTimespanMax = 0;
+	int64 nActualTimespanMin = 0;
+
+	if (false && GetAdjustedTime() - pindexLast->GetBlockTime() > CMainNetDiff::sRules->nTargetTimespan * 10)
+	{
+		nActualTimespan = GetAdjustedTime() - pindexFirst->GetBlockTime();
+	}
+	else
+	{
+		nActualTimespan = pindexLast->GetBlockTime() - pindexFirst->GetBlockTime();
+	}
+
+	// FeatherCoin's cap system.
+	// For diff. increase
+	nActualTimespanMin = (nActualTimespan * 55) / 99;
+	// For diff. decrease
+	nActualTimespanMax = (nActualTimespan * 99) / 55;
+
+	printf("  nActualTimespan = %"PRI64d"  before bounds\n", nActualTimespan);
+
+	if (nActualTimespan > nActualTimespanMax) nActualTimespan = nActualTimespanMax;
+	if (nActualTimespan < nActualTimespanMin) nActualTimespan = nActualTimespanMin;
+
+	return nActualTimespan;
+}
+
 bool CDynamicDiff::ShouldApplyRetarget(const CBlockIndex* pindexLast, const CBlock* pblock)
 {
 	const CBlockIndex* pindexFirst = pindexLast;
 
 	if (nBestHeight < CMainNetDiff::sRules->nInterval) return false;
 
-	for (int i = 0; i < CMainNetDiff::sRules->nInterval; i++)
+	if (false && GetAdjustedTime() - pindexLast->GetBlockTime() > CMainNetDiff::sRules->nTargetTimespan * 5)
+		return true;
+
+	for (int i = 0; i < CMainNetDiff::sRules->nInterval * 4; i++)
 	{
 		pindexFirst = pindexFirst->pprev;
 	}
 
-	double totalTime = pindexLast->nTime - pindexFirst->nTime;
+	double totalTime = (pindexLast->nTime - pindexFirst->nTime);
 	double targetTime = CMainNetDiff::sRules->nTargetTimespan;
 
-	return (totalTime > targetTime * 1.10 || totalTime < targetTime / 1.10);
+	return (totalTime > targetTime * 110 / 100 || totalTime < targetTime * 100 / 110);
 }
 
 //
