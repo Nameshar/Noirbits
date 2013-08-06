@@ -388,12 +388,11 @@ bool CDynamicDiff::ShouldApplyRetarget(const CBlockIndex* pindexLast, const CBlo
 {
 	const CBlockIndex* pindexFirst = pindexLast;
 
-	if (nBestHeight < CMainNetDiff::sRules->nInterval * 4) return false;
-
 	if (false && GetAdjustedTime() - pindexLast->GetBlockTime() > CMainNetDiff::sRules->nTargetTimespan * 5)
 		return true;
 
-	for (int i = 0; i < CMainNetDiff::sRules->nInterval * 4; i++)
+	int64 nLookup = (CMainNetDiff::sRules->nInterval * 4 > nBestHeight + 1) ? CMainNetDiff::sRules->nInterval * 4 : nBestHeight;
+	for (int i = 0; i <= nLookup; i++)
 	{
 		pindexFirst = pindexFirst->pprev;
 	}
