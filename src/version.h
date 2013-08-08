@@ -12,7 +12,7 @@
 //
 
 // These need to be macro's, as version.cpp's voodoo requires it
-#define CLIENT_VERSION_MAJOR       1
+#define CLIENT_VERSION_MAJOR       2
 #define CLIENT_VERSION_MINOR       0
 #define CLIENT_VERSION_REVISION    0
 #define CLIENT_VERSION_BUILD       0
@@ -30,13 +30,12 @@ extern const std::string CLIENT_DATE;
 //
 // network protocol versioning
 //
-
 static const int PROTOCOL_VERSION = 60002;
 
-// Earlier versions not supported after height 33333
+// Earlier versions not supported after height 31500
 // New fees kick in, and new diff. rules too.
 static const int MIN_PROTO_VERSION = 60002;
-static const int MIN_PROTO_VERSION_HEIGHT = 33333;
+static const int MIN_PROTO_VERSION_HEIGHT = 31500;
 
 // nTime field added to CAddress, starting with this version;
 // if possible, avoid requesting addresses nodes older than this

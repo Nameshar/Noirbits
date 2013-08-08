@@ -361,7 +361,7 @@ int64 CDynamicDiff::GetActualTimespan(const CBlockIndex* pindexFirst, const CBlo
 	int64 nActualTimespanMax = 0;
 	int64 nActualTimespanMin = 0;
 
-	if (true && GetAdjustedTime() - pindexLast->GetBlockTime() > CMainNetDiff::sRules->nTargetTimespan * 10)
+	if (false && GetAdjustedTime() - pindexLast->GetBlockTime() > CMainNetDiff::sRules->nTargetTimespan * 10)
 	{
 		nActualTimespan = GetAdjustedTime() - pindexFirst->GetBlockTime();
 	}
@@ -388,17 +388,18 @@ bool CDynamicDiff::ShouldApplyRetarget(const CBlockIndex* pindexLast, const CBlo
 {
 	const CBlockIndex* pindexFirst = pindexLast;
 
-	if (true && GetAdjustedTime() - pindexLast->GetBlockTime() > CMainNetDiff::sRules->nTargetTimespan * 5)
+	if (false && GetAdjustedTime() - pindexLast->GetBlockTime() > CMainNetDiff::sRules->nTargetTimespan * 5)
 		return true;
 
-	int64 nLookup = (CMainNetDiff::sRules->nInterval * 4 > nBestHeight) ? CMainNetDiff::sRules->nInterval * 4 : nBestHeight;
+	int64 nLookup = CMainNetDiff::sRules->nInterval * 4;
+	int i = 0;
 	for (int i = 0; i < nLookup && pindexFirst->pprev != NULL; i++)
 	{
 		pindexFirst = pindexFirst->pprev;
 	}
 
-	double totalTime = (pindexLast->nTime - pindexFirst->nTime);
-	double targetTime = CMainNetDiff::sRules->nTargetTimespan;
+	double totalTime = (pindexLast->nTime - pindexFirst->nTime) / i;
+	double targetTime = CMainNetDiff::sRules->nTargetSpacing * i;
 
 	return (totalTime > targetTime * 110 / 100 || totalTime < targetTime * 100 / 110);
 }
