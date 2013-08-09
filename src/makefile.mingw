@@ -7,13 +7,16 @@ USE_UPNP:=0
 INCLUDEPATHS= \
  -I"C:\deps\boost" \
  -I"C:\deps\db\build_unix" \
- -I"C:\deps\ssl\include"
+ -I"C:\deps\ssl\include" \
+ -I"C:\deps"
 
 LIBPATHS= \
  -L"C:\deps\boost\stage\lib" \
  -L"C:\deps\db\build_unix" \
- -L"C:\deps\ssl"
+ -L"C:\deps\ssl" \
+ -L"C:\deps\miniupnpc"
 
+ 
 LIBS= \
  -l boost_system-mgw46-mt-s-1_54 \
  -l boost_filesystem-mgw46-mt-s-1_54 \
@@ -37,6 +40,7 @@ endif
 ifneq (${USE_UPNP}, -)
  LIBS += -l miniupnpc -l iphlpapi
  DEFS += -DSTATICLIB -DUSE_UPNP=$(USE_UPNP)
+ LIBPATHS += -L"C:\deps\miniupnpc"
 endif
 
 ifneq (${USE_IPV6}, -)

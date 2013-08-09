@@ -630,5 +630,30 @@ inline uint32_t ByteReverse(uint32_t value)
     return (value<<16) | (value>>16);
 }
 
+// .. and a wrapper that just calls func once
+template <typename Callable> void TraceThread(const char* name,  Callable func)
+{
+    std::string s = strprintf("bitcoin-%s", name);
+    RenameThread(s.c_str());
+    try
+    {
+        printf("%s thread start\n", name);
+        func();
+        printf("%s thread exit\n", name);
+    }
+    catch (boost::thread_interrupted)
+    {
+        printf("%s thread interrupt\n", name);
+        throw;
+    }
+    catch (std::exception& e) {
+        PrintException(&e, name);
+    }
+    catch (...) {
+        PrintException(NULL, name);
+    }
+}
+
+
 #endif
 

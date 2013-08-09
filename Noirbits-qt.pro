@@ -18,6 +18,8 @@ BOOST_INCLUDE_PATH=C:/deps/boost
 BOOST_LIB_PATH=C:/deps/boost/stage/lib
 BDB_INCLUDE_PATH=c:/deps/db/build_unix
 BDB_LIB_PATH=c:/deps/db/build_unix
+MINIUPNPC_INCLUDE_PATH=C:/deps/
+MINIUPNPC_LIB_PATH=C:/deps/miniupnpc
 OPENSSL_INCLUDE_PATH=c:/deps/ssl/include
 OPENSSL_LIB_PATH=c:/deps/ssl
 OBJECTS_DIR = build
@@ -40,6 +42,15 @@ contains(RELEASE, 1) {
 # qmake "USE_UPNP=-" (not supported)
 contains(USE_UPNP, -) {
     message(Building without UPNP support)
+} else {
+    message(Building with UPNP support)
+    count(USE_UPNP, 0) {
+        USE_UPNP=1
+    }
+    DEFINES += USE_UPNP=$$USE_UPNP STATICLIB
+    INCLUDEPATH += $$MINIUPNPC_INCLUDE_PATH
+    LIBS += $$join(MINIUPNPC_LIB_PATH,,-L,) -lminiupnpc
+    win32:LIBS += -liphlpapi
 }
 
 # use: qmake "USE_QRCODE=1"
