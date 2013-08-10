@@ -1045,7 +1045,7 @@ void ThreadMapPort()
                 else
                     printf("UPnP Port Mapping successful.\n");;
 
-                Sleep(20*60*1000); // Refresh every 20 minutes
+                MilliSleep(20*60*1000); // Refresh every 20 minutes
             }
         }
         catch (boost::thread_interrupted)
@@ -1778,6 +1778,13 @@ void StartNode(void* parg)
         if (!CreateThread(ThreadDNSAddressSeed, NULL))
             printf("Error: CreateThread(ThreadDNSAddressSeed) failed\n");
 
+#ifdef USE_UPNP
+    // Map ports with UPnP
+    printf("UPNP port mapping enabled\n");
+    MapPort(GetBoolArg("-upnp", USE_UPNP));
+#else
+    printf("UPNP port mapping disabled");
+#endif
 
     // Get addresses from IRC and advertise ours
     if (!CreateThread(ThreadIRCSeed, NULL))

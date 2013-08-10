@@ -118,13 +118,6 @@ public:
 }
 instance_of_cinit;
 
-
-
-
-
-
-
-
 void RandAddSeed()
 {
     // Seed with CPU performance counter
