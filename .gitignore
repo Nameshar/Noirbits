@@ -1,0 +1,9 @@
+src/Noirbitsd.exe
+build/*
+src/obj/*
+*.o
+*.exe
+*.Debug
+*.Release
+release/
+*.user
