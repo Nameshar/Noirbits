@@ -184,13 +184,13 @@ public:
 				printf("using CTestNetDiff instance\n");
 			return GetTestNetDiff(GetDynamicDiff());
 		}
-		else if (nHeight + 1 >= nMinHeightForNewRules && nHeight + 1 < nMinHeightForDynamicRules)
+        else if (nHeight + 1 >= nMinHeightForNewRules && (nHeight + 1 < nMinHeightForDynamicRules && false))
 		{
 			if (fDebug)
 				printf("using CMainNetDiff instance\n");
 			return GetNewDiff();
 		}
-		else if (nHeight + 1 >= nMinHeightForDynamicRules)
+        else if (nHeight + 1 >= nMinHeightForDynamicRules && false)
 		{
 			if (fDebug)
 				printf("using CMainNetDiff instance\n");

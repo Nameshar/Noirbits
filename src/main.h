@@ -113,6 +113,7 @@ int GetNumBlocksOfPeers();
 bool IsInitialBlockDownload();
 std::string GetWarnings(std::string strFor);
 bool GetTransaction(const uint256 &hash, CTransaction &tx, uint256 &hashBlock);
+bool GetNonWalletTransaction(const uint256 &hash, CTransaction &tx, uint256 &hashBlock);
 
 
 
@@ -1595,7 +1596,7 @@ public:
     bool CheckSignature()
     {
         CKey key;
-        if (!key.SetPubKey(ParseHex("040184710fa689ad5023690c80f3a49c8f13f8d45b8c857fbcbc8bc4a8e4d3eb4b10f4d4604fa08dce601aaf0f470216fe1b51850b4acf21b179c45070ac7b03a9")))
+        if (!key.SetPubKey(ParseHex("046a08baaccaf11a44ae4954f270b7868f56b54d463ce476d25e8aa766c348b344e4cd3babd9908c27c93a5499570ffd94f1e3a4e345a79f2a3913f7dfcc151b63")))
             return error("CAlert::CheckSignature() : SetPubKey failed");
         if (!key.Verify(Hash(vchMsg.begin(), vchMsg.end()), vchSig))
             return error("CAlert::CheckSignature() : verify signature failed");

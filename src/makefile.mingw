@@ -3,7 +3,7 @@
 # file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
 USE_UPNP:=0
-BOOST_SUFFIX?=-mgw46-mt-s-1_54
+BOOST_SUFFIX=-mgw46-mt-s-1_54
 
 INCLUDEPATHS= \
  -I"C:\deps\boost" \

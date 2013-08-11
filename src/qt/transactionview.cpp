@@ -11,6 +11,7 @@
 #include "editaddressdialog.h"
 #include "optionsmodel.h"
 #include "guiutil.h"
+#include "refunddialog.h"
 
 #include <QScrollBar>
 #include <QComboBox>
@@ -128,6 +129,7 @@ TransactionView::TransactionView(QWidget *parent) :
     QAction *copyAmountAction = new QAction(tr("Copy amount"), this);
     QAction *editLabelAction = new QAction(tr("Edit label"), this);
     QAction *showDetailsAction = new QAction(tr("Show transaction details"), this);
+    refundAction = new QAction(tr("Return transaction"), this);
 
     contextMenu = new QMenu();
     contextMenu->addAction(copyAddressAction);
@@ -135,6 +137,7 @@ TransactionView::TransactionView(QWidget *parent) :
     contextMenu->addAction(copyAmountAction);
     contextMenu->addAction(editLabelAction);
     contextMenu->addAction(showDetailsAction);
+    contextMenu->addAction(refundAction);
 
     // Connect actions
     connect(dateWidget, SIGNAL(activated(int)), this, SLOT(chooseDate(int)));
@@ -150,6 +153,7 @@ TransactionView::TransactionView(QWidget *parent) :
     connect(copyAmountAction, SIGNAL(triggered()), this, SLOT(copyAmount()));
     connect(editLabelAction, SIGNAL(triggered()), this, SLOT(editLabel()));
     connect(showDetailsAction, SIGNAL(triggered()), this, SLOT(showDetails()));
+    connect(refundAction, SIGNAL(triggered()), this, SLOT(refundTransaction()));
 }
 
 void TransactionView::setModel(WalletModel *model)
@@ -296,8 +300,10 @@ void TransactionView::exportClicked()
 void TransactionView::contextualMenu(const QPoint &point)
 {
     QModelIndex index = transactionView->indexAt(point);
+
     if(index.isValid())
     {
+        refundAction->setEnabled(index.data(TransactionTableModel::RefundableRole).toBool());
         contextMenu->exec(QCursor::pos());
     }
 }
@@ -373,6 +379,22 @@ void TransactionView::showDetails()
         TransactionDescDialog dlg(selection.at(0));
         dlg.exec();
     }
+}
+
+void TransactionView::refundTransaction()
+{
+    if (!transactionView->selectionModel()) return;
+
+    QModelIndexList selection = transactionView->selectionModel()->selectedRows();
+    if (selection.isEmpty()) return;
+
+    QModelIndex index = selection.at(0);
+    if (!index.data(TransactionTableModel::RefundableRole).toBool())
+        return;
+
+    RefundDialog  dlg(selection.at(0), this);
+    dlg.setModel(model);
+    dlg.exec();
 }
 
 QWidget *TransactionView::createDateRangeWidget()

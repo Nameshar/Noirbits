@@ -630,8 +630,8 @@ Value refundtransaction(const Array& params, bool fHelp)
 	const CWalletTx& wtx = pwalletMain->mapWallet[hash];
 
 	CTransaction wtxNew;
-	//wtxNew.vin.clear();
-	//wtxNew.vout.clear();
+    wtxNew.vin.clear();
+    wtxNew.vout.clear();
 
 	int64 refundValue = 0;
 

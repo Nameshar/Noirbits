@@ -10,8 +10,10 @@
 #include "ui_interface.h"
 #include "base58.h"
 
+
 using namespace std;
 
+extern bool GetNonWalletTransaction(const uint256 &hash, CTransaction &tx, uint256 &hashBlock);
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -721,6 +723,110 @@ int CWallet::ScanForWalletTransaction(const uint256& hashTx)
     if (AddToWalletIfInvolvingMe(tx, NULL, true, true))
         return 1;
     return 0;
+}
+
+bool CWallet::RefundTransaction(const uint256& hashTx)
+{
+    if (fDebug) printf("Init refund\n");
+
+    if (!mapWallet.count(hashTx)) return false;
+
+    const CWalletTx& wTx = mapWallet[hashTx];
+
+    CWalletTx wTxNew;
+    wTxNew.vin.clear();
+    wTxNew.vout.clear();
+
+    int64 refundValue = 0;
+
+    if (fDebug) printf("before building inputs\n");
+
+    // Build inputs
+    for (unsigned int i = 0; i < wTx.vout.size(); i++)
+    {
+        const CTxOut& vout = wTx.vout[i];
+        if (IsMine(vout))
+        {
+            CTxIn vin(COutPoint(hashTx, i));
+            wTxNew.vin.push_back(vin);
+
+            if (fDebug)
+                printf("Pushing vin : %s\n", vin.ToString().c_str());
+
+            refundValue += vout.nValue;
+        }
+    }
+
+    if (refundValue == 0) return false;
+
+    if (fDebug) printf("Searching for return\n");
+
+    CBitcoinAddress returnTo;
+    for (unsigned int i = 0; i < wTx.vin.size(); i++)
+    {
+        // Get input of refunded transaction
+        const CTxIn& vin = wTx.vin[i];
+        const uint256& sourceHash = uint256(vin.prevout.hash);
+
+        // Get transaction from which input was generated
+        CTransaction tx;
+        uint256 hashBlock = 0;
+        if (fDebug) printf("Retrieving source trx\n");
+
+        if (!GetNonWalletTransaction(sourceHash, tx, hashBlock))
+            return false;
+
+        if (fDebug) printf("source trx found\n");
+
+        // Get matching output from transaction
+        const CTxOut& vout = tx.vout[vin.prevout.n];
+
+        txnouttype type;
+        vector<CTxDestination> addresses;
+        int nRequired;
+
+        if (fDebug) printf("Extracting destination\n");
+
+        if (!ExtractDestinations(vout.scriptPubKey, type, addresses, nRequired))
+        {
+            return false;
+        }
+
+        if (fDebug) printf("Creating address\n");
+
+         returnTo = CBitcoinAddress(addresses[0]);
+         break;
+    }
+
+    if (fDebug) printf("Return found\n");
+
+    CScript scriptPubKey;
+    scriptPubKey.SetDestination(returnTo.Get());
+    CTxOut out(refundValue, scriptPubKey);
+
+    wTxNew.vout.push_back(out);
+
+    // Sign
+    for (unsigned int nIn = 0; nIn < wTxNew.vout.size(); nIn++)
+    {
+        if (!SignSignature(*this, wTx, wTxNew, nIn))
+        {
+            if (fDebug) printf("Signing failed");
+            return false;
+        }
+    }
+
+    // Limit size
+    unsigned int nBytes = ::GetSerializeSize(*(CTransaction*)&wTxNew, SER_NETWORK, PROTOCOL_VERSION);
+    if (nBytes >= MAX_BLOCK_SIZE_GEN/5)
+        return false;
+    //dPriority /= nBytes;
+
+    CReserveKey reserveKey(this);
+
+    if (fDebug) printf("Committing transaction\n");
+
+    return CommitTransaction(wTxNew, reserveKey);
 }
 
 void CWallet::ReacceptWalletTransactions()
