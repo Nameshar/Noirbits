@@ -170,7 +170,8 @@ HEADERS += src/qt/bitcoingui.h \
     src/qt/miningpage.h \
     src/version.h \
     src/qt/rpcconsole.h \
-    src/diff.h
+    src/diff.h \
+    src/qt/refunddialog.h
 
 SOURCES += src/qt/bitcoin.cpp src/qt/bitcoingui.cpp \
     src/qt/transactiontablemodel.cpp \
@@ -232,7 +233,8 @@ SOURCES += src/qt/bitcoin.cpp src/qt/bitcoingui.cpp \
     src/scrypt.c \
     src/qt/miningpage.cpp \
     src/noui.cpp \
-    src/diff.cpp
+    src/diff.cpp \
+    src/qt/refunddialog.cpp
 
 RESOURCES += \
     src/qt/bitcoin.qrc
@@ -249,7 +251,8 @@ FORMS += \
     src/qt/forms/askpassphrasedialog.ui \
     src/qt/forms/rpcconsole.ui \
     src/qt/forms/miningpage.ui \
-    src/qt/forms/optionsdialog.ui
+    src/qt/forms/optionsdialog.ui \
+    src/qt/forms/refunddialog.ui
 
 contains(USE_QRCODE, 1) {
 HEADERS += src/qt/qrcodedialog.h

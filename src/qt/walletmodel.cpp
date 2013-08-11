@@ -122,6 +122,12 @@ bool WalletModel::validateAddress(const QString &address)
     return addressParsed.IsValid();
 }
 
+bool WalletModel::refundTransaction(const uint256 &txId)
+{
+    // TODO: Return status code instead of bool to provide finer error messages.
+    return wallet->RefundTransaction(txId);
+}
+
 WalletModel::SendCoinsReturn WalletModel::sendCoins(const QList<SendCoinsRecipient> &recipients)
 {
     qint64 total = 0;

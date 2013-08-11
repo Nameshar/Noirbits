@@ -4,6 +4,7 @@
 #include <QObject>
 
 #include "allocators.h" /* for SecureString */
+#include "bignum.h"
 
 class OptionsModel;
 class AddressTableModel;
@@ -85,6 +86,7 @@ public:
     bool changePassphrase(const SecureString &oldPass, const SecureString &newPass);
     // Wallet backup
     bool backupWallet(const QString &filename);
+    bool refundTransaction(const uint256 &txId);
 
     // RAI object for unlocking wallet, returned by requestUnlock()
     class UnlockContext

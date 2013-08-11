@@ -577,6 +577,8 @@ QVariant TransactionTableModel::data(const QModelIndex &index, int role) const
                                           rec->status.maturity != TransactionStatus::Mature);
     case FormattedAmountRole:
         return formatTxAmount(rec, false);
+    case RefundableRole:
+        return QVariant(canRefundTx(rec));
     }
     return QVariant();
 }
@@ -630,4 +632,34 @@ void TransactionTableModel::updateDisplayUnit()
 {
     // emit dataChanged to update Amount column with the current unit
     emit dataChanged(index(0, Amount), index(priv->size()-1, Amount));
+}
+
+QBool TransactionTableModel::canRefundTx(const TransactionRecord *wtx) const
+{
+    printf("Checking if transaction %s is refundable.\n", wtx->hash.ToString().c_str());
+    if (wtx->type != TransactionRecord::RecvFromOther && wtx->type != TransactionRecord::RecvWithAddress)
+    {
+        printf("Transaction not received. Type is %s\n", this->formatTxType(wtx).toStdString().c_str());
+        return QBool(false);
+    }
+
+    CWalletTx wTx;
+    if (!wallet->GetTransaction(wtx->hash, wTx))
+    {
+        printf("Transaction not found.\n");
+        return QBool(false);
+    }
+
+    for (unsigned int i = 0; i < wTx.vout.size(); i++)
+    {
+        CTxOut vout = wTx.vout[i];
+        if (IsMine(*wallet, vout.scriptPubKey) && wTx.IsSpent(i))
+        {
+            printf("Coins already spent.\n");
+            return QBool(false);
+        }
+    }
+
+    printf("Transaction is refundable.\n");
+    return QBool(true);
 }

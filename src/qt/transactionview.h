@@ -57,6 +57,8 @@ private:
 
     QWidget *createDateRangeWidget();
 
+    QAction *refundAction;
+
 private slots:
     void contextualMenu(const QPoint &);
     void dateRangeChanged();
@@ -65,6 +67,7 @@ private slots:
     void editLabel();
     void copyLabel();
     void copyAmount();
+    void refundTransaction();
 
 signals:
     void doubleClicked(const QModelIndex&);

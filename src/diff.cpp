@@ -393,15 +393,25 @@ bool CDynamicDiff::ShouldApplyRetarget(const CBlockIndex* pindexLast, const CBlo
 
 	int64 nLookup = CMainNetDiff::sRules->nInterval * 4;
 	int i = 0;
-	for (int i = 0; i < nLookup && pindexFirst->pprev != NULL; i++)
+    for (i = 0; i < nLookup && pindexFirst->pprev != NULL; i++)
 	{
 		pindexFirst = pindexFirst->pprev;
 	}
 
-	double totalTime = (pindexLast->nTime - pindexFirst->nTime) / i;
-	double targetTime = CMainNetDiff::sRules->nTargetSpacing * i;
+    double meanTime = (pindexLast->nTime - pindexFirst->nTime) / i;
+    double targetTime = CMainNetDiff::sRules->nTargetSpacing;
+    double squaredDiffs = 0;
 
-	return (totalTime > targetTime * 110 / 100 || totalTime < targetTime * 100 / 110);
+    pindexFirst = pindexLast;
+    for (i = 0; i < nLookup && pindexFirst->pprev != NULL; i++)
+    {
+        squaredDiffs += pow((meanTime - (pindexFirst->nTime - pindexFirst->pprev->nTime)), 2);
+        pindexFirst = pindexFirst->pprev;
+    }
+
+    double maxDeviation = 2 * sqrt(squaredDiffs / i);
+
+    return (meanTime > targetTime + maxDeviation || meanTime < targetTime - maxDeviation);
 }
 
 //

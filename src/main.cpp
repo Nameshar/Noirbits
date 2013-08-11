@@ -793,7 +793,11 @@ bool GetTransaction(const uint256 &hash, CTransaction &tx, uint256 &hashBlock)
     return false;
 }
 
-
+// Alias for GetTransaction
+bool GetNonWalletTransaction(const uint256 &hash, CTransaction &tx, uint256 &hashBlock)
+{
+    return GetTransaction(hash, tx, hashBlock);
+}
 
 
 
