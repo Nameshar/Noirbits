@@ -27,7 +27,7 @@ The recently implemented features are :
 * Transaction refunds. Incoming transaction can be refunded, provided the associated coins have not been spent. The RPC call is undocumented
 as of now, but in place. The call can also be used to forward coins to another address.
 
-	`Noirbitsd refundtransaction *transactionHash* [*optional return address*]`
+	`Noirbitsd refundtransaction transactionHash [optional return address]`
 
 Noirbits wiki
 -------------
