@@ -1,7 +1,7 @@
 Noirbits (2.1.1.0)
 ------------------
 
-Noirbits is a community coin, oringally launched by [barwizi](https://github.com/Nameshar/Noirbits). After some political turmoil,
+Noirbits is a community coin, originally launched by [barwizi](https://github.com/Nameshar/Noirbits). After some political turmoil,
 his version is no longer maintained and this is considered to be the new official client. 
 
 Contributing
