@@ -18,6 +18,8 @@ BOOST_INCLUDE_PATH=C:/deps/boost
 BOOST_LIB_PATH=C:/deps/boost/stage/lib
 BDB_INCLUDE_PATH=c:/deps/db/build_unix
 BDB_LIB_PATH=c:/deps/db/build_unix
+QRENCODE_INCLUDE_PATH=C:/deps/libqrencode/
+QRENCODE_LIB_PATH=C:/deps/libqrencode/.libs
 MINIUPNPC_INCLUDE_PATH=C:/deps/
 MINIUPNPC_LIB_PATH=C:/deps/miniupnpc
 OPENSSL_INCLUDE_PATH=c:/deps/ssl/include
@@ -58,7 +60,7 @@ contains(USE_UPNP, -) {
 contains(USE_QRCODE, 1) {
     message(Building with QRCode support)
     DEFINES += USE_QRCODE
-    LIBS += -lqrencode
+    LIBS += -lqrencode -lpthread
 }
 
 # use: qmake "USE_DBUS=1"

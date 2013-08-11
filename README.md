@@ -1,4 +1,4 @@
-Noirbits (2.1.1.0)
+Noirbits (2.2.1.0)
 -
 
 Noirbits is a community coin, originally launched by [barwizi](https://github.com/Nameshar/Noirbits). After some political turmoil,
@@ -30,7 +30,7 @@ to prime-quality code and features.
 The recently implemented features are :
 
 * UPNP support restore (foocoin has all UPNP code stripped out, compiling with UPNP had absolutely no effect).
-* Transaction refunds. Incoming transaction can be refunded, provided the associated coins have not been spent. The RPC call is undocumented
+* Transaction refunds. Now available in GUI client. Incoming transaction can be refunded, provided the associated coins have not been spent. The RPC call is undocumented
 as of now, but in place. The call can also be used to forward coins to another address.
 
 	`Noirbitsd refundtransaction <transactionHash> [<return address>]`
