@@ -190,7 +190,8 @@ public:
 				printf("using CMainNetDiff instance\n");
 			return GetDynamicDiff();
 		}
-        else if (nHeight + 1 >= nMinHeightForNewRules)
+        else if ((nHeight + 1 >= nMinHeightForNewRules && nHeight + 1 < nFixHeight)
+                  || nHeight + 1 >= nNewDiffHeight)
 		{
 			if (fDebug)
 				printf("using CMainNetDiff instance\n");
@@ -208,7 +209,9 @@ private:
 	// Height at which to apply new rules.
 	static const int nMinHeightForNewRules = 25020;
 	static const int nMinHeightForDynamicRules = 33333;
-
+	static const int nFixHeight = 32128;
+	static const int nNewDiffHeight = 36000;
+	
 	inline static CDiff* GetOldDiff()
 	{
 		if (poldDiff == NULL) poldDiff = new COldNetDiff(bnProofOfWorkLimit);
