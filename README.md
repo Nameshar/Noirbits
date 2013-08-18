@@ -1,4 +1,4 @@
-Noirbits (2.2.1.0)
+Noirbits (2.2.3.0)
 -
 
 Noirbits is a community coin, originally launched by [barwizi](https://github.com/Nameshar/Noirbits). After some political turmoil,
