@@ -301,7 +301,7 @@ unsigned int CMainNetDiff::ComputeMinWork(unsigned int nBase, int64 nTime)
 
 	while (nTime > 0 && bnResult < bnProofOfWorkLimit)
 	{
-		bnResult *= 99 / 55;
+		bnResult *= 4;
 		nTime -= sRules->nTargetTimespan * 4;
 	}
 

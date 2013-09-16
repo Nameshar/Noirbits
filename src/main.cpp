@@ -1768,6 +1768,7 @@ bool ProcessBlock(CNode* pfrom, CBlock* pblock)
         bnRequired.SetCompact(ComputeMinWork(pcheckpoint->nBits, deltaTime));
         if (bnNewBlock > bnRequired)
         {
+	    printf("bnNewBlock:  %08x  %s\n", bnNewBlock.GetCompact(), bnNewBlock.getuint256().ToString().c_str());
             if (pfrom)
                 pfrom->Misbehaving(100);
             return error("ProcessBlock() : block with too little proof-of-work");
